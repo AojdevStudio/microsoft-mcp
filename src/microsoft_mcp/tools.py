@@ -216,15 +216,90 @@ def detect_html_content(content: str) -> bool:
         content_lower.startswith(("<html", "<!doctype html")),
         "<body" in content_lower,
         "<div" in content_lower,
-        "<p>" in content_lower,
-        "<br>" in content_lower,
+        "<p>" in content_lower or "<p " in content_lower,
+        "<br>" in content_lower or "<br/>" in content_lower or "<br />" in content_lower,
         "<h1>" in content_lower or "<h2>" in content_lower or "<h3>" in content_lower,
-        "<ul>" in content_lower or "<ol>" in content_lower,
+        "<h1 " in content_lower or "<h2 " in content_lower or "<h3 " in content_lower,
+        "<ul>" in content_lower or "<ol>" in content_lower or "<li>" in content_lower,
+        "<ul " in content_lower or "<ol " in content_lower or "<li " in content_lower,
         "<strong>" in content_lower or "<b>" in content_lower,
+        "<strong " in content_lower or "<b " in content_lower,
         "<em>" in content_lower or "<i>" in content_lower,
+        "<em " in content_lower or "<i " in content_lower,
+        "<a " in content_lower or "<a>" in content_lower,
+        "<table" in content_lower,
+        "<img " in content_lower,
         "style=" in content_lower,
+        "href=" in content_lower,
     ]
     return any(html_indicators)
+
+
+def ensure_html_structure(content: str) -> str:
+    """Ensure HTML content has proper structure for email rendering"""
+    content_lower = content.lower().strip()
+    
+    # If it already has proper HTML structure, return as-is
+    if content_lower.startswith("<!doctype html") or content_lower.startswith("<html"):
+        return content
+    
+    # If it has body tags but no html tags, wrap it
+    if "<body" in content_lower and "<html" not in content_lower:
+        return f"""<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+</head>
+{content}
+</html>"""
+    
+    # If it's partial HTML (has tags but no body), wrap it completely
+    if detect_html_content(content) and "<body" not in content_lower:
+        return f"""<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+</head>
+<body>
+{content}
+</body>
+</html>"""
+    
+    return content
+
+
+def parse_email_input(email_input: str | list[str]) -> list[str]:
+    """Parse email input that might be incorrectly formatted as a JSON string
+    
+    Handles cases where the input might be:
+    - A string email: "email@example.com"
+    - A list of emails: ["email1@example.com", "email2@example.com"]  
+    - A JSON-encoded string: '["email@example.com"]' (incorrect but handle gracefully)
+    """
+    import json
+    
+    # If it's already a list, return it
+    if isinstance(email_input, list):
+        return email_input
+    
+    # If it's a string, check if it's JSON-encoded
+    if isinstance(email_input, str):
+        # Check if it looks like a JSON array
+        if email_input.strip().startswith('[') and email_input.strip().endswith(']'):
+            try:
+                # Try to parse it as JSON
+                parsed = json.loads(email_input)
+                if isinstance(parsed, list):
+                    return parsed
+            except (json.JSONDecodeError, ValueError):
+                # If parsing fails, treat it as a regular email
+                pass
+        
+        # Return as a single-item list
+        return [email_input]
+    
+    # Fallback
+    return [str(email_input)]
 
 
 @mcp.tool
@@ -237,22 +312,25 @@ def create_email_draft(
     attachments: str | list[str] | None = None,
 ) -> dict[str, Any]:
     """Create an email draft with file path(s) as attachments"""
-    to_list = [to] if isinstance(to, str) else to
+    to_list = parse_email_input(to)
 
-    # Detect if body contains HTML (using uppercase as per Microsoft Graph API)
-    content_type = "HTML" if detect_html_content(body) else "Text"
+    # Detect if body contains HTML and ensure proper structure
+    if detect_html_content(body):
+        content_type = "HTML"
+        content = ensure_html_structure(body)
+    else:
+        content_type = "Text"
+        content = body
     
     message = {
         "subject": subject,
-        "body": {"contentType": content_type, "content": body},
+        "body": {"contentType": content_type, "content": content},
         "toRecipients": [{"emailAddress": {"address": addr}} for addr in to_list],
     }
 
     if cc:
-        cc_list = [cc] if isinstance(cc, str) else cc
-        message["ccRecipients"] = [
-            {"emailAddress": {"address": addr}} for addr in cc_list
-        ]
+        cc_list = parse_email_input(cc)
+        message["ccRecipients"] = [{"emailAddress": {"address": addr}} for addr in cc_list]
 
     small_attachments = []
     large_attachments = []
@@ -316,22 +394,25 @@ def send_email(
     attachments: str | list[str] | None = None,
 ) -> dict[str, str]:
     """Send an email immediately with file path(s) as attachments"""
-    to_list = [to] if isinstance(to, str) else to
+    to_list = parse_email_input(to)
 
-    # Detect if body contains HTML (using uppercase as per Microsoft Graph API)
-    content_type = "HTML" if detect_html_content(body) else "Text"
+    # Detect if body contains HTML and ensure proper structure
+    if detect_html_content(body):
+        content_type = "HTML"
+        content = ensure_html_structure(body)
+    else:
+        content_type = "Text"
+        content = body
     
     message = {
         "subject": subject,
-        "body": {"contentType": content_type, "content": body},
+        "body": {"contentType": content_type, "content": content},
         "toRecipients": [{"emailAddress": {"address": addr}} for addr in to_list],
     }
 
     if cc:
-        cc_list = [cc] if isinstance(cc, str) else cc
-        message["ccRecipients"] = [
-            {"emailAddress": {"address": addr}} for addr in cc_list
-        ]
+        cc_list = parse_email_input(cc)
+        message["ccRecipients"] = [{"emailAddress": {"address": addr}} for addr in cc_list]
 
     # Check if we have large attachments
     has_large_attachments = False
@@ -373,22 +454,7 @@ def send_email(
         return {"status": "sent"}
     elif has_large_attachments:
         # Create draft first, then add large attachments, then send
-        # We need to handle large attachments manually here
-        to_list = [to] if isinstance(to, str) else to
-        
-        # Detect if body contains HTML
-        content_type = "HTML" if detect_html_content(body) else "Text"
-        
-        message = {
-            "subject": subject,
-            "body": {"contentType": content_type, "content": body},
-            "toRecipients": [{"emailAddress": {"address": addr}} for addr in to_list],
-        }
-        if cc:
-            cc_list = [cc] if isinstance(cc, str) else cc
-            message["ccRecipients"] = [
-                {"emailAddress": {"address": addr}} for addr in cc_list
-            ]
+        # Message is already properly formatted above, so we can reuse it
 
         result = graph.request("POST", "/me/messages", account_id, json=message)
         if not result:
@@ -484,11 +550,16 @@ def move_email(
 @mcp.tool
 def reply_to_email(account_id: str, email_id: str, body: str) -> dict[str, str]:
     """Reply to an email (sender only)"""
-    # Detect if body contains HTML (using uppercase as per Microsoft Graph API)
-    content_type = "HTML" if detect_html_content(body) else "Text"
+    # Detect if body contains HTML and ensure proper structure
+    if detect_html_content(body):
+        content_type = "HTML"
+        content = ensure_html_structure(body)
+    else:
+        content_type = "Text"
+        content = body
     
     endpoint = f"/me/messages/{email_id}/reply"
-    payload = {"message": {"body": {"contentType": content_type, "content": body}}}
+    payload = {"message": {"body": {"contentType": content_type, "content": content}}}
     graph.request("POST", endpoint, account_id, json=payload)
     return {"status": "sent"}
 
@@ -496,11 +567,16 @@ def reply_to_email(account_id: str, email_id: str, body: str) -> dict[str, str]:
 @mcp.tool
 def reply_all_email(account_id: str, email_id: str, body: str) -> dict[str, str]:
     """Reply to all recipients of an email"""
-    # Detect if body contains HTML (using uppercase as per Microsoft Graph API)
-    content_type = "HTML" if detect_html_content(body) else "Text"
+    # Detect if body contains HTML and ensure proper structure
+    if detect_html_content(body):
+        content_type = "HTML"
+        content = ensure_html_structure(body)
+    else:
+        content_type = "Text"
+        content = body
     
     endpoint = f"/me/messages/{email_id}/replyAll"
-    payload = {"message": {"body": {"contentType": content_type, "content": body}}}
+    payload = {"message": {"body": {"contentType": content_type, "content": content}}}
     graph.request("POST", endpoint, account_id, json=payload)
     return {"status": "sent"}
 
@@ -570,9 +646,14 @@ def create_event(
         event["location"] = {"displayName": location}
 
     if body:
-        # Detect if body contains HTML (using uppercase as per Microsoft Graph API)
-        content_type = "HTML" if detect_html_content(body) else "Text"
-        event["body"] = {"contentType": content_type, "content": body}
+        # Detect if body contains HTML and ensure proper structure
+        if detect_html_content(body):
+            content_type = "HTML"
+            content = ensure_html_structure(body)
+        else:
+            content_type = "Text"
+            content = body
+        event["body"] = {"contentType": content_type, "content": content}
 
     if attendees:
         attendees_list = [attendees] if isinstance(attendees, str) else attendees
@@ -608,9 +689,14 @@ def update_event(
     if "location" in updates:
         formatted_updates["location"] = {"displayName": updates["location"]}
     if "body" in updates:
-        # Detect if body contains HTML (using uppercase as per Microsoft Graph API)
-        content_type = "HTML" if detect_html_content(updates["body"]) else "Text"
-        formatted_updates["body"] = {"contentType": content_type, "content": updates["body"]}
+        # Detect if body contains HTML and ensure proper structure
+        if detect_html_content(updates["body"]):
+            content_type = "HTML"
+            content = ensure_html_structure(updates["body"])
+        else:
+            content_type = "Text"
+            content = updates["body"]
+        formatted_updates["body"] = {"contentType": content_type, "content": content}
 
     result = graph.request(
         "PATCH", f"/me/events/{event_id}", account_id, json=formatted_updates
