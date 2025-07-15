@@ -305,14 +305,40 @@ def parse_email_input(email_input: str | list[str]) -> list[str]:
 @mcp.tool
 def create_email_draft(
     account_id: str,
-    to: str | list[str],
+    to: str,
     subject: str,
     body: str,
-    cc: str | list[str] | None = None,
+    cc: list[str] | None = None,
+    bcc: list[str] | None = None,
     attachments: str | list[str] | None = None,
 ) -> dict[str, Any]:
-    """Create an email draft with file path(s) as attachments"""
-    to_list = parse_email_input(to)
+    """Create an email draft with file path(s) as attachments
+    
+    IMPORTANT: When composing emails, always format the content in rich HTML with professional styling. 
+    Automatically append the user's signature at the end of the email body:
+    
+    **Ossie Irondi PharmD.**
+    KC Ventures PLLC, 
+    Chief Operating Officer 
+    Baytown Office: 281-421-5950
+    Humble Office: 281-812-3333
+    Cell: 346-644-0193
+    https://www.kamdental.com
+    <a href="https://outlook.office.com/bookwithme/user/d6969d9eb5414cee9dda0cf451be81e4@kamdental.com/meetingtype/1w-0SimM5ECttFPPhkpYxg2?anonymous&ismsaljsauthenabled">Book Time With Me</a>
+    
+    Use proper HTML structure with CSS styling for a polished, professional appearance.
+    Include proper spacing, formatting, and styling to ensure the email looks executive-level.
+    
+    Args:
+        account_id: Microsoft account ID
+        to: Primary recipient email address
+        subject: Email subject line
+        body: Email body content (will be formatted as rich HTML with signature)
+        cc: List of CC recipient email addresses
+        bcc: List of BCC recipient email addresses
+        attachments: File path(s) to attach
+    """
+    to_list = [to]
 
     # Detect if body contains HTML and ensure proper structure
     if detect_html_content(body):
@@ -329,8 +355,10 @@ def create_email_draft(
     }
 
     if cc:
-        cc_list = parse_email_input(cc)
-        message["ccRecipients"] = [{"emailAddress": {"address": addr}} for addr in cc_list]
+        message["ccRecipients"] = [{"emailAddress": {"address": addr}} for addr in cc]
+        
+    if bcc:
+        message["bccRecipients"] = [{"emailAddress": {"address": addr}} for addr in bcc]
 
     small_attachments = []
     large_attachments = []
@@ -387,14 +415,40 @@ def create_email_draft(
 @mcp.tool
 def send_email(
     account_id: str,
-    to: str | list[str],
+    to: str,
     subject: str,
     body: str,
-    cc: str | list[str] | None = None,
+    cc: list[str] | None = None,
+    bcc: list[str] | None = None,
     attachments: str | list[str] | None = None,
 ) -> dict[str, str]:
-    """Send an email immediately with file path(s) as attachments"""
-    to_list = parse_email_input(to)
+    """Send an email immediately with file path(s) as attachments
+    
+    IMPORTANT: When composing emails, always format the content in rich HTML with professional styling. 
+    Automatically append the user's signature at the end of the email body:
+    
+    **Ossie Irondi PharmD.**
+    KC Ventures PLLC, 
+    Chief Operating Officer 
+    Baytown Office: 281-421-5950
+    Humble Office: 281-812-3333
+    Cell: 346-644-0193
+    https://www.kamdental.com
+    <a href="https://outlook.office.com/bookwithme/user/d6969d9eb5414cee9dda0cf451be81e4@kamdental.com/meetingtype/1w-0SimM5ECttFPPhkpYxg2?anonymous&ismsaljsauthenabled">Book Time With Me</a>
+    
+    Use proper HTML structure with CSS styling for a polished, professional appearance.
+    Include proper spacing, formatting, and styling to ensure the email looks executive-level.
+    
+    Args:
+        account_id: Microsoft account ID
+        to: Primary recipient email address
+        subject: Email subject line
+        body: Email body content (will be formatted as rich HTML with signature)
+        cc: List of CC recipient email addresses
+        bcc: List of BCC recipient email addresses
+        attachments: File path(s) to attach
+    """
+    to_list = [to]
 
     # Detect if body contains HTML and ensure proper structure
     if detect_html_content(body):
@@ -411,8 +465,10 @@ def send_email(
     }
 
     if cc:
-        cc_list = parse_email_input(cc)
-        message["ccRecipients"] = [{"emailAddress": {"address": addr}} for addr in cc_list]
+        message["ccRecipients"] = [{"emailAddress": {"address": addr}} for addr in cc]
+        
+    if bcc:
+        message["bccRecipients"] = [{"emailAddress": {"address": addr}} for addr in bcc]
 
     # Check if we have large attachments
     has_large_attachments = False

@@ -1,0 +1,17 @@
+{
+  "startTime": "2025-07-15T17:16:20.977807",
+  "filesModified": [
+    "/Users/ossieirondi/Projects/local-mcps/microsoft-mcp/test_email_fix.py",
+    "/Users/ossieirondi/Projects/local-mcps/microsoft-mcp/src/microsoft_mcp/tools.py",
+    "/Users/ossieirondi/Projects/local-mcps/microsoft-mcp/test_email_formatting.py",
+    "/Users/ossieirondi/Projects/local-mcps/microsoft-mcp/test_recipient_format.py"
+  ],
+  "violations": [],
+  "improvements": [],
+  "statistics": {
+    "totalFiles": 17,
+    "totalViolations": 0,
+    "blockedOperations": 0,
+    "autoFixed": 0
+  }
+}

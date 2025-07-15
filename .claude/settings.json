@@ -1,6 +1,4 @@
 {
-  "version": "1.0",
-  "description": "cdev hooks configuration",
   "hooks": {
     "PreToolUse": [
       {
@@ -8,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .claude/hooks/pre-bash-validator.py"
+            "command": "uv run .claude/hooks/pre-bash-validator.py"
           }
         ]
       }
@@ -19,15 +17,15 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .claude/hooks/code-quality-reporter.py"
+            "command": "uv run .claude/hooks/code-quality-reporter.py"
           },
           {
             "type": "command",
-            "command": "python3 .claude/hooks/api-standards-checker.py"
+            "command": "uv run .claude/hooks/api-standards-checker.py"
           },
           {
             "type": "command",
-            "command": "python3 .claude/hooks/universal-linter.py"
+            "command": "uv run .claude/hooks/universal-linter.py"
           }
         ]
       }
@@ -38,7 +36,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .claude/hooks/task-completion-enforcer.py"
+            "command": "uv run .claude/hooks/task-completion-enforcer.py"
           }
         ]
       }
