@@ -1,0 +1,47 @@
+{
+  "version": "1.0",
+  "description": "cdev hooks configuration",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/pre-bash-validator.py"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/code-quality-reporter.py"
+          },
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/api-standards-checker.py"
+          },
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/universal-linter.py"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/task-completion-enforcer.py"
+          }
+        ]
+      }
+    ]
+  }
+}
