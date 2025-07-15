@@ -209,6 +209,24 @@ def get_email(
     return result
 
 
+def detect_html_content(content: str) -> bool:
+    """Detect if content contains HTML that should be rendered as HTML"""
+    content_lower = content.lower().strip()
+    html_indicators = [
+        content_lower.startswith(("<html", "<!doctype html")),
+        "<body" in content_lower,
+        "<div" in content_lower,
+        "<p>" in content_lower,
+        "<br>" in content_lower,
+        "<h1>" in content_lower or "<h2>" in content_lower or "<h3>" in content_lower,
+        "<ul>" in content_lower or "<ol>" in content_lower,
+        "<strong>" in content_lower or "<b>" in content_lower,
+        "<em>" in content_lower or "<i>" in content_lower,
+        "style=" in content_lower,
+    ]
+    return any(html_indicators)
+
+
 @mcp.tool
 def create_email_draft(
     account_id: str,
@@ -221,9 +239,12 @@ def create_email_draft(
     """Create an email draft with file path(s) as attachments"""
     to_list = [to] if isinstance(to, str) else to
 
+    # Detect if body contains HTML (using uppercase as per Microsoft Graph API)
+    content_type = "HTML" if detect_html_content(body) else "Text"
+    
     message = {
         "subject": subject,
-        "body": {"contentType": "Text", "content": body},
+        "body": {"contentType": content_type, "content": body},
         "toRecipients": [{"emailAddress": {"address": addr}} for addr in to_list],
     }
 
@@ -297,9 +318,12 @@ def send_email(
     """Send an email immediately with file path(s) as attachments"""
     to_list = [to] if isinstance(to, str) else to
 
+    # Detect if body contains HTML (using uppercase as per Microsoft Graph API)
+    content_type = "HTML" if detect_html_content(body) else "Text"
+    
     message = {
         "subject": subject,
-        "body": {"contentType": "Text", "content": body},
+        "body": {"contentType": content_type, "content": body},
         "toRecipients": [{"emailAddress": {"address": addr}} for addr in to_list],
     }
 
@@ -351,9 +375,13 @@ def send_email(
         # Create draft first, then add large attachments, then send
         # We need to handle large attachments manually here
         to_list = [to] if isinstance(to, str) else to
+        
+        # Detect if body contains HTML
+        content_type = "HTML" if detect_html_content(body) else "Text"
+        
         message = {
             "subject": subject,
-            "body": {"contentType": "Text", "content": body},
+            "body": {"contentType": content_type, "content": body},
             "toRecipients": [{"emailAddress": {"address": addr}} for addr in to_list],
         }
         if cc:
@@ -456,8 +484,11 @@ def move_email(
 @mcp.tool
 def reply_to_email(account_id: str, email_id: str, body: str) -> dict[str, str]:
     """Reply to an email (sender only)"""
+    # Detect if body contains HTML (using uppercase as per Microsoft Graph API)
+    content_type = "HTML" if detect_html_content(body) else "Text"
+    
     endpoint = f"/me/messages/{email_id}/reply"
-    payload = {"message": {"body": {"contentType": "Text", "content": body}}}
+    payload = {"message": {"body": {"contentType": content_type, "content": body}}}
     graph.request("POST", endpoint, account_id, json=payload)
     return {"status": "sent"}
 
@@ -465,8 +496,11 @@ def reply_to_email(account_id: str, email_id: str, body: str) -> dict[str, str]:
 @mcp.tool
 def reply_all_email(account_id: str, email_id: str, body: str) -> dict[str, str]:
     """Reply to all recipients of an email"""
+    # Detect if body contains HTML (using uppercase as per Microsoft Graph API)
+    content_type = "HTML" if detect_html_content(body) else "Text"
+    
     endpoint = f"/me/messages/{email_id}/replyAll"
-    payload = {"message": {"body": {"contentType": "Text", "content": body}}}
+    payload = {"message": {"body": {"contentType": content_type, "content": body}}}
     graph.request("POST", endpoint, account_id, json=payload)
     return {"status": "sent"}
 
@@ -536,7 +570,9 @@ def create_event(
         event["location"] = {"displayName": location}
 
     if body:
-        event["body"] = {"contentType": "Text", "content": body}
+        # Detect if body contains HTML (using uppercase as per Microsoft Graph API)
+        content_type = "HTML" if detect_html_content(body) else "Text"
+        event["body"] = {"contentType": content_type, "content": body}
 
     if attendees:
         attendees_list = [attendees] if isinstance(attendees, str) else attendees
@@ -572,7 +608,9 @@ def update_event(
     if "location" in updates:
         formatted_updates["location"] = {"displayName": updates["location"]}
     if "body" in updates:
-        formatted_updates["body"] = {"contentType": "Text", "content": updates["body"]}
+        # Detect if body contains HTML (using uppercase as per Microsoft Graph API)
+        content_type = "HTML" if detect_html_content(updates["body"]) else "Text"
+        formatted_updates["body"] = {"contentType": content_type, "content": updates["body"]}
 
     result = graph.request(
         "PATCH", f"/me/events/{event_id}", account_id, json=formatted_updates
