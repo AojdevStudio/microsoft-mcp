@@ -5,7 +5,7 @@ description: Create well-formatted commits with conventional messages and emoji
 
 # Commit
 
-This command creates well-formatted Git commits using conventional commit messages with emoji, automated quality checks, and intelligent change analysis. For maximum efficiency, whenever you need to perform multiple independent operations, invoke all relevant tools simultaneously rather than sequentially.
+This command creates well-formatted Git commits using conventional commit messages with emoji, automated quality checks, and intelligent change analysis.
 
 **variables:**
 CommitOptions: $ARGUMENTS

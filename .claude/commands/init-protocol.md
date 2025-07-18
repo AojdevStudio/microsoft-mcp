@@ -37,7 +37,7 @@ init_protocol_command:
       - 'Select protocol categories that match what the user is TRYING TO BUILD, not just what tools are present.'
       - "Generate protocols customized for the user's actual project goals and context."
       - "Start CLAUDE.md with a clear 'Project Context' section explaining what this project is actually about."
-      - "Create a comprehensive CLAUDE.md file with all selected frameworks adapted to the project's true purpose."
+      - "Create a comprehensive CLAUDE.md file with all selected frameworks adapted to the project's true purpose and place it in the root of the project."
       - 'Include a project-specific quick start guide based on the actual project goals.'
       - "Save the final CLAUDE.md and provide a summary focused on how it will help achieve the project's objectives."
 
@@ -143,7 +143,7 @@ init_protocol_command:
 
     # Criteria to evaluate the success of the generated CLAUDE.md file.
     success_metrics:
-      - '✅ CLAUDE.md clearly explains what the project is actually about (not just the framework).'
+      - '✅ CLAUDE.md located in the root of the project and clearly explains what the project is actually about (not just the framework).'
       - "✅ Protocols match the user's actual project goals and technologies."
       - '✅ Framework complexity aligns with project needs.'
       - '✅ Custom commands are relevant to what the user is building.'
