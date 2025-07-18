@@ -38,3 +38,10 @@ htmlcov/
 *.swp
 *.swo
 *~
+
+# Project-specific ignores
+agent_context.yaml
+docs/
+logs/
+shared/
+.claude/hooks/.session-quality.json
