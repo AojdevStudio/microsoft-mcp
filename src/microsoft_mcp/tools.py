@@ -217,7 +217,9 @@ def detect_html_content(content: str) -> bool:
         "<body" in content_lower,
         "<div" in content_lower,
         "<p>" in content_lower or "<p " in content_lower,
-        "<br>" in content_lower or "<br/>" in content_lower or "<br />" in content_lower,
+        "<br>" in content_lower
+        or "<br/>" in content_lower
+        or "<br />" in content_lower,
         "<h1>" in content_lower or "<h2>" in content_lower or "<h3>" in content_lower,
         "<h1 " in content_lower or "<h2 " in content_lower or "<h3 " in content_lower,
         "<ul>" in content_lower or "<ol>" in content_lower or "<li>" in content_lower,
@@ -236,56 +238,149 @@ def detect_html_content(content: str) -> bool:
 
 
 def ensure_html_structure(content: str) -> str:
-    """Ensure HTML content has proper structure for email rendering"""
+    """Ensure HTML content has proper structure for email rendering with professional styling"""
+    import re
+
     content_lower = content.lower().strip()
-    
-    # If it already has proper HTML structure, return as-is
+
+    # Style class mappings for email-safe inline styles
+    style_mappings = {
+        "header": "background-color: #667eea; color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;",
+        "section": "background-color: #f8f9fa; padding: 20px; margin: 15px 0; border-radius: 8px; border-left: 4px solid #667eea;",
+        "highlight": "background-color: #e3f2fd; padding: 15px; border-radius: 6px; margin: 10px 0;",
+        "strong-yes": "background-color: #28a745; color: white; padding: 10px; border-radius: 6px; text-align: center; font-weight: bold; font-size: 18px;",
+    }
+
+    # Signature HTML template
+    signature_html = """
+    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+        <strong style="color: #333333; font-size: 14px;">Ossie Irondi PharmD.</strong><br style="margin: 0;">
+        <span style="color: #666666; font-size: 14px;">KC Ventures PLLC,</span><br style="margin: 0;">
+        <span style="color: #666666; font-size: 14px;">Chief Operating Officer</span><br style="margin: 0;">
+        <span style="color: #666666; font-size: 14px;">Baytown Office: 281-421-5950</span><br style="margin: 0;">
+        <span style="color: #666666; font-size: 14px;">Humble Office: 281-812-3333</span><br style="margin: 0;">
+        <span style="color: #666666; font-size: 14px;">Cell: 346-644-0193</span><br style="margin: 0;">
+        <a href="https://www.kamdental.com" style="color: #667eea; text-decoration: none; font-size: 14px;">https://www.kamdental.com</a><br style="margin: 0;">
+        <a href="https://outlook.office.com/bookwithme/user/d6969d9eb5414cee9dda0cf451be81e4@kamdental.com/meetingtype/1w-0SimM5ECttFPPhkpYxg2?anonymous&ismsaljsauthenabled" style="color: #667eea; text-decoration: none; font-size: 14px;">Book Time With Me</a>
+    </div>
+    """
+
+    # Check if signature is already in content
+    has_signature = (
+        "ossie irondi" in content_lower or "book time with me" in content_lower
+    )
+
+    # If signature exists in content, format it properly
+    if has_signature:
+        # Extract and format signature if it's in plain text
+        signature_patterns = [
+            r"\*\*Ossie Irondi.*?Book Time With Me</a>",
+            r"Ossie Irondi.*?Book Time With Me",
+        ]
+        for pattern in signature_patterns:
+            match = re.search(pattern, content, re.DOTALL | re.IGNORECASE)
+            if match:
+                # Replace the signature with formatted HTML and prevent double signature
+                content = content[: match.start()]
+                has_signature = False  # We'll add the formatted signature later
+                break
+
+    # If it already has proper HTML structure with styling, enhance it
     if content_lower.startswith("<!doctype html") or content_lower.startswith("<html"):
+        # Check if body has inline styles
+        if "style=" not in content:
+            # Add inline styles to body tag
+            body_pattern = r"<body[^>]*>"
+            body_replacement = "<body style=\"margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 16px; line-height: 1.6; color: #333333; background-color: #f5f5f5;\">"
+            content = re.sub(
+                body_pattern, body_replacement, content, flags=re.IGNORECASE
+            )
         return content
-    
-    # If it has body tags but no html tags, wrap it
-    if "<body" in content_lower and "<html" not in content_lower:
-        return f"""<!DOCTYPE html>
+
+    # Replace CSS classes with inline styles
+    processed_content = content
+    for class_name, inline_style in style_mappings.items():
+        # Replace class attributes with inline styles
+        processed_content = re.sub(
+            rf'class=["\']?{class_name}["\']?',
+            f'style="{inline_style}"',
+            processed_content,
+            flags=re.IGNORECASE,
+        )
+        # Also handle divs with classes
+        processed_content = re.sub(
+            rf'<div\s+class=["\']?{class_name}["\']?',
+            f'<div style="{inline_style}"',
+            processed_content,
+            flags=re.IGNORECASE,
+        )
+
+    # Create the email template based on whether content has HTML
+    if detect_html_content(processed_content):
+        # Content has HTML, preserve it but wrap with proper structure
+        main_content = processed_content
+    else:
+        # Plain text, convert to HTML
+        # Convert line breaks to <br> tags
+        html_content = processed_content.replace("\n", "<br>")
+        # Convert bold markdown to HTML
+        html_content = re.sub(r"\*\*(.*?)\*\*", r"<strong>\1</strong>", html_content)
+        main_content = f'<p style="margin: 0 0 15px 0;">{html_content}</p>'
+
+    # Build the complete HTML email template with table-based layout
+    html_template = f"""<!DOCTYPE html>
 <html>
 <head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>Email</title>
 </head>
-{content}
-</html>"""
-    
-    # If it's partial HTML (has tags but no body), wrap it completely
-    if detect_html_content(content) and "<body" not in content_lower:
-        return f"""<!DOCTYPE html>
-<html>
-<head>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-</head>
-<body>
-{content}
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 16px; line-height: 1.6; color: #333333; background-color: #f5f5f5;">
+    <table cellpadding="0" cellspacing="0" width="100%" style="background-color: #f5f5f5;">
+        <tr>
+            <td style="padding: 20px 0;">
+                <table cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin: 0 auto;">
+                    <tr>
+                        <td>
+                            <table cellpadding="0" cellspacing="0" width="100%" style="background-color: #ffffff; border-radius: 8px;">
+                                <tr>
+                                    <td style="padding: 40px;">
+                                        {main_content}
+                                        {signature_html if not has_signature else ""}
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>"""
-    
-    return content
+
+    return html_template
 
 
 def parse_email_input(email_input: str | list[str]) -> list[str]:
     """Parse email input that might be incorrectly formatted as a JSON string
-    
+
     Handles cases where the input might be:
     - A string email: "email@example.com"
-    - A list of emails: ["email1@example.com", "email2@example.com"]  
+    - A list of emails: ["email1@example.com", "email2@example.com"]
     - A JSON-encoded string: '["email@example.com"]' (incorrect but handle gracefully)
     """
     import json
-    
+
     # If it's already a list, return it
     if isinstance(email_input, list):
         return email_input
-    
+
     # If it's a string, check if it's JSON-encoded
     if isinstance(email_input, str):
         # Check if it looks like a JSON array
-        if email_input.strip().startswith('[') and email_input.strip().endswith(']'):
+        if email_input.strip().startswith("[") and email_input.strip().endswith("]"):
             try:
                 # Try to parse it as JSON
                 parsed = json.loads(email_input)
@@ -294,10 +389,10 @@ def parse_email_input(email_input: str | list[str]) -> list[str]:
             except (json.JSONDecodeError, ValueError):
                 # If parsing fails, treat it as a regular email
                 pass
-        
+
         # Return as a single-item list
         return [email_input]
-    
+
     # Fallback
     return [str(email_input)]
 
@@ -313,22 +408,22 @@ def create_email_draft(
     attachments: str | list[str] | None = None,
 ) -> dict[str, Any]:
     """Create an email draft with file path(s) as attachments
-    
-    IMPORTANT: When composing emails, always format the content in rich HTML with professional styling. 
+
+    IMPORTANT: When composing emails, always format the content in rich HTML with professional styling similar to that of fortune 500 companies.
     Automatically append the user's signature at the end of the email body:
-    
+
     **Ossie Irondi PharmD.**
-    KC Ventures PLLC, 
-    Chief Operating Officer 
+    KC Ventures PLLC,
+    Chief Operating Officer
     Baytown Office: 281-421-5950
     Humble Office: 281-812-3333
     Cell: 346-644-0193
     https://www.kamdental.com
     <a href="https://outlook.office.com/bookwithme/user/d6969d9eb5414cee9dda0cf451be81e4@kamdental.com/meetingtype/1w-0SimM5ECttFPPhkpYxg2?anonymous&ismsaljsauthenabled">Book Time With Me</a>
-    
+
     Use proper HTML structure with CSS styling for a polished, professional appearance.
     Include proper spacing, formatting, and styling to ensure the email looks executive-level.
-    
+
     Args:
         account_id: Microsoft account ID
         to: Primary recipient email address
@@ -347,7 +442,7 @@ def create_email_draft(
     else:
         content_type = "Text"
         content = body
-    
+
     message = {
         "subject": subject,
         "body": {"contentType": content_type, "content": content},
@@ -356,7 +451,7 @@ def create_email_draft(
 
     if cc:
         message["ccRecipients"] = [{"emailAddress": {"address": addr}} for addr in cc]
-        
+
     if bcc:
         message["bccRecipients"] = [{"emailAddress": {"address": addr}} for addr in bcc]
 
@@ -413,7 +508,7 @@ def create_email_draft(
 
 
 @mcp.tool
-def send_email(
+def send_email(  # Send email tool
     account_id: str,
     to: str,
     subject: str,
@@ -423,22 +518,22 @@ def send_email(
     attachments: str | list[str] | None = None,
 ) -> dict[str, str]:
     """Send an email immediately with file path(s) as attachments
-    
-    IMPORTANT: When composing emails, always format the content in rich HTML with professional styling. 
+
+    IMPORTANT: When composing emails, always format the content in rich HTML with professional styling.
     Automatically append the user's signature at the end of the email body:
-    
+
     **Ossie Irondi PharmD.**
-    KC Ventures PLLC, 
-    Chief Operating Officer 
+    KC Ventures PLLC,
+    Chief Operating Officer
     Baytown Office: 281-421-5950
     Humble Office: 281-812-3333
     Cell: 346-644-0193
     https://www.kamdental.com
     <a href="https://outlook.office.com/bookwithme/user/d6969d9eb5414cee9dda0cf451be81e4@kamdental.com/meetingtype/1w-0SimM5ECttFPPhkpYxg2?anonymous&ismsaljsauthenabled">Book Time With Me</a>
-    
+
     Use proper HTML structure with CSS styling for a polished, professional appearance.
     Include proper spacing, formatting, and styling to ensure the email looks executive-level.
-    
+
     Args:
         account_id: Microsoft account ID
         to: Primary recipient email address
@@ -457,7 +552,7 @@ def send_email(
     else:
         content_type = "Text"
         content = body
-    
+
     message = {
         "subject": subject,
         "body": {"contentType": content_type, "content": content},
@@ -466,7 +561,7 @@ def send_email(
 
     if cc:
         message["ccRecipients"] = [{"emailAddress": {"address": addr}} for addr in cc]
-        
+
     if bcc:
         message["bccRecipients"] = [{"emailAddress": {"address": addr}} for addr in bcc]
 
@@ -613,7 +708,7 @@ def reply_to_email(account_id: str, email_id: str, body: str) -> dict[str, str]:
     else:
         content_type = "Text"
         content = body
-    
+
     endpoint = f"/me/messages/{email_id}/reply"
     payload = {"message": {"body": {"contentType": content_type, "content": content}}}
     graph.request("POST", endpoint, account_id, json=payload)
@@ -630,7 +725,7 @@ def reply_all_email(account_id: str, email_id: str, body: str) -> dict[str, str]
     else:
         content_type = "Text"
         content = body
-    
+
     endpoint = f"/me/messages/{email_id}/replyAll"
     payload = {"message": {"body": {"contentType": content_type, "content": content}}}
     graph.request("POST", endpoint, account_id, json=payload)
