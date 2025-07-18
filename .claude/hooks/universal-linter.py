@@ -407,7 +407,17 @@ def main():
                 'message': 'ℹ️ No file path provided, skipping validation'
             }
         else:
+            # Show user-friendly message that linter is running
+            file_name = Path(file_path).name if file_path else "file"
+            print(f"🔍 Running linter on {file_name}...", file=sys.stderr)
+            
             result = validate_file(file_path)
+            
+            # Show result to user
+            if result.get('approve', True):
+                print(f"✨ Linting complete for {file_name}", file=sys.stderr)
+            else:
+                print(f"🔧 Linter found issues in {file_name} (see details above)", file=sys.stderr)
         
         print(json.dumps(result))
         

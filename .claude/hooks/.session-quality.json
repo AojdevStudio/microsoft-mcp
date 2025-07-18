@@ -1,15 +1,25 @@
 {
-  "startTime": "2025-07-15T17:16:20.977807",
+  "startTime": "2025-07-15T19:03:16.559391",
   "filesModified": [
-    "/Users/ossieirondi/Projects/local-mcps/microsoft-mcp/test_email_fix.py",
+    "/Users/ossieirondi/Projects/local-mcps/microsoft-mcp/shared/coordination/explore_summary.md",
     "/Users/ossieirondi/Projects/local-mcps/microsoft-mcp/src/microsoft_mcp/tools.py",
-    "/Users/ossieirondi/Projects/local-mcps/microsoft-mcp/test_email_formatting.py",
-    "/Users/ossieirondi/Projects/local-mcps/microsoft-mcp/test_recipient_format.py"
+    "/Users/ossieirondi/Projects/local-mcps/microsoft-mcp/shared/coordination/explore-email-creation.md",
+    "/Users/ossieirondi/Projects/local-mcps/microsoft-mcp/shared/deployment-plans/plan_master.md",
+    "/Users/ossieirondi/Projects/local-mcps/microsoft-mcp/shared/deployment-plans/plan-styling-implementation.md",
+    "/Users/ossieirondi/Projects/local-mcps/microsoft-mcp/tests/test_email_styling.py",
+    "/Users/ossieirondi/Projects/local-mcps/microsoft-mcp/README.md",
+    "/Users/ossieirondi/Projects/local-mcps/microsoft-mcp/shared/reports/pr_description.md",
+    "/Users/ossieirondi/Projects/local-mcps/microsoft-mcp/shared/deployment-plans/plan-testing-strategy.md",
+    "/Users/ossieirondi/Projects/local-mcps/microsoft-mcp/shared/reports/red_test_log.txt",
+    "/Users/ossieirondi/Projects/local-mcps/microsoft-mcp/shared/reports/green_test_log.txt",
+    "/Users/ossieirondi/Projects/local-mcps/microsoft-mcp/agent_context.yaml",
+    "/Users/ossieirondi/Projects/local-mcps/microsoft-mcp/shared/coordination/phase_state.yaml",
+    "/Users/ossieirondi/Projects/local-mcps/microsoft-mcp/shared/reports/validation/validation_report.md"
   ],
   "violations": [],
   "improvements": [],
   "statistics": {
-    "totalFiles": 17,
+    "totalFiles": 28,
     "totalViolations": 0,
     "blockedOperations": 0,
     "autoFixed": 0

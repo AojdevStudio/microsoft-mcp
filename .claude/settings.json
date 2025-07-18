@@ -1,4 +1,21 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(uv:*)",
+      "Bash(find:*)",
+      "Bash(mv:*)",
+      "Bash(grep:*)",
+      "Bash(npm:*)",
+      "Bash(ls:*)",
+      "Bash(cp:*)",
+      "Write",
+      "Edit",
+      "Bash(chmod:*)",
+      "Bash(touch:*)"
+    ],
+    "deny": []
+  },
   "hooks": {
     "PreToolUse": [
       {
@@ -7,6 +24,19 @@
           {
             "type": "command",
             "command": "uv run .claude/hooks/pre-bash-validator.py"
+          },
+          {
+            "type": "command",
+            "command": "uv run .claude/hooks/commit-message-validator.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run .claude/hooks/typescript-validator.py"
           }
         ]
       }
@@ -17,11 +47,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run .claude/hooks/code-quality-reporter.py"
+            "command": "uv run .claude/hooks/import-organizer.py"
           },
           {
             "type": "command",
-            "command": "uv run .claude/hooks/api-standards-checker.py"
+            "command": "uv run .claude/hooks/code-quality-reporter.py"
           },
           {
             "type": "command",
@@ -37,6 +67,17 @@
           {
             "type": "command",
             "command": "uv run .claude/hooks/task-completion-enforcer.py"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run .claude/hooks/notification.py"
           }
         ]
       }
