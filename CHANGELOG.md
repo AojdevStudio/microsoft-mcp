@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- 🐛 Force HTML formatting for all email functions to ensure professional styling is always applied
+- 🐛 Remove content detection logic that was causing emails to be sent as plain text instead of formatted HTML
+- 🐛 Ensure executive signature and professional styling appear in all emails regardless of input content type
+
 ## [0.1.0] - 2025-01-18
 
 ### Added

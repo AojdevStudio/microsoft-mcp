@@ -435,13 +435,9 @@ def create_email_draft(
     """
     to_list = [to]
 
-    # Detect if body contains HTML and ensure proper structure
-    if detect_html_content(body):
-        content_type = "HTML"
-        content = ensure_html_structure(body)
-    else:
-        content_type = "Text"
-        content = body
+    # Always format as HTML with professional styling
+    content_type = "HTML"
+    content = ensure_html_structure(body)
 
     message = {
         "subject": subject,
@@ -545,13 +541,9 @@ def send_email(  # Send email tool
     """
     to_list = [to]
 
-    # Detect if body contains HTML and ensure proper structure
-    if detect_html_content(body):
-        content_type = "HTML"
-        content = ensure_html_structure(body)
-    else:
-        content_type = "Text"
-        content = body
+    # Always format as HTML with professional styling
+    content_type = "HTML"
+    content = ensure_html_structure(body)
 
     message = {
         "subject": subject,
@@ -701,13 +693,9 @@ def move_email(
 @mcp.tool
 def reply_to_email(account_id: str, email_id: str, body: str) -> dict[str, str]:
     """Reply to an email (sender only)"""
-    # Detect if body contains HTML and ensure proper structure
-    if detect_html_content(body):
-        content_type = "HTML"
-        content = ensure_html_structure(body)
-    else:
-        content_type = "Text"
-        content = body
+    # Always format as HTML with professional styling
+    content_type = "HTML"
+    content = ensure_html_structure(body)
 
     endpoint = f"/me/messages/{email_id}/reply"
     payload = {"message": {"body": {"contentType": content_type, "content": content}}}
@@ -718,13 +706,9 @@ def reply_to_email(account_id: str, email_id: str, body: str) -> dict[str, str]:
 @mcp.tool
 def reply_all_email(account_id: str, email_id: str, body: str) -> dict[str, str]:
     """Reply to all recipients of an email"""
-    # Detect if body contains HTML and ensure proper structure
-    if detect_html_content(body):
-        content_type = "HTML"
-        content = ensure_html_structure(body)
-    else:
-        content_type = "Text"
-        content = body
+    # Always format as HTML with professional styling
+    content_type = "HTML"
+    content = ensure_html_structure(body)
 
     endpoint = f"/me/messages/{email_id}/replyAll"
     payload = {"message": {"body": {"contentType": content_type, "content": content}}}
@@ -797,13 +781,9 @@ def create_event(
         event["location"] = {"displayName": location}
 
     if body:
-        # Detect if body contains HTML and ensure proper structure
-        if detect_html_content(body):
-            content_type = "HTML"
-            content = ensure_html_structure(body)
-        else:
-            content_type = "Text"
-            content = body
+        # Always format as HTML with professional styling
+        content_type = "HTML"
+        content = ensure_html_structure(body)
         event["body"] = {"contentType": content_type, "content": content}
 
     if attendees:
@@ -840,13 +820,9 @@ def update_event(
     if "location" in updates:
         formatted_updates["location"] = {"displayName": updates["location"]}
     if "body" in updates:
-        # Detect if body contains HTML and ensure proper structure
-        if detect_html_content(updates["body"]):
-            content_type = "HTML"
-            content = ensure_html_structure(updates["body"])
-        else:
-            content_type = "Text"
-            content = updates["body"]
+        # Always format as HTML with professional styling
+        content_type = "HTML"
+        content = ensure_html_structure(updates["body"])
         formatted_updates["body"] = {"contentType": content_type, "content": content}
 
     result = graph.request(
