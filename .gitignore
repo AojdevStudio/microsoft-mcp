@@ -41,7 +41,8 @@ htmlcov/
 
 # Project-specific ignores
 agent_context.yaml
-docs/
 logs/
 shared/
+archive/shared/
+archive/logs/
 .claude/hooks/.session-quality.json
