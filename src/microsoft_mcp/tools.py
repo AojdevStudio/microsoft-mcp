@@ -433,6 +433,12 @@ def create_email_draft(
         bcc: List of BCC recipient email addresses
         attachments: File path(s) to attach
     """
+    # Parse cc and bcc parameters in case they are passed as JSON strings
+    if cc is not None:
+        cc = parse_email_input(cc) if not isinstance(cc, list) else cc
+    if bcc is not None:
+        bcc = parse_email_input(bcc) if not isinstance(bcc, list) else bcc
+
     to_list = [to]
 
     # Always format as HTML with professional styling
@@ -539,6 +545,12 @@ def send_email(  # Send email tool
         bcc: List of BCC recipient email addresses
         attachments: File path(s) to attach
     """
+    # Parse cc and bcc parameters in case they are passed as JSON strings
+    if cc is not None:
+        cc = parse_email_input(cc) if not isinstance(cc, list) else cc
+    if bcc is not None:
+        bcc = parse_email_input(bcc) if not isinstance(bcc, list) else bcc
+
     to_list = [to]
 
     # Always format as HTML with professional styling
