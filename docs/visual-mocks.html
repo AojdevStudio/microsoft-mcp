@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dental Analytics Email Framework - Mocks</title>
+    <style>
+        /* Framework Preview Styles */
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background: #f5f7fa;
+        }
+
+        .demo-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .demo-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .demo-header h1 {
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+
+        .demo-section {
+            margin-bottom: 50px;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .demo-section-header {
+            background: #2b6cb0;
+            color: white;
+            padding: 20px;
+            font-weight: 600;
+            font-size: 18px;
+        }
+
+        .demo-content {
+            padding: 30px;
+        }
+
+        /* CSS Framework Variables */
+        :root {
+            --primary: #2B6CB0;
+            --success: #38A169;
+            --warning: #D69E2E;
+            --danger: #E53E3E;
+            --neutral: #4A5568;
+            --light-bg: #F7FAFC;
+            --border: #E2E8F0;
+        }
+
+        /* Component Library */
+
+        /* 1. Metric Cards */
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin: 20px 0;
+        }
+
+        .metric-card {
+            background: var(--light-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .metric-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--neutral);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .metric-value {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .metric-value.status-behind {
+            color: var(--danger);
+        }
+
+        .metric-value.status-good {
+            color: var(--success);
+        }
+
+        .metric-value.status-warning {
+            color: var(--warning);
+        }
+
+        .metric-subtitle {
+            font-size: 13px;
+            color: var(--neutral);
+        }
+
+        /* 2. Provider Performance Component */
+        .provider-list {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        .provider-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            transition: background-color 0.2s;
+        }
+
+        .provider-item:hover {
+            background: var(--light-bg);
+        }
+
+        .provider-item:last-child {
+            border-bottom: none;
+        }
+
+        .provider-info h4 {
+            margin: 0 0 4px 0;
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .provider-role {
+            font-size: 13px;
+            color: var(--neutral);
+        }
+
+        .provider-stats {
+            text-align: right;
+        }
+
+        .provider-production {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .provider-goal {
+            font-size: 13px;
+            color: var(--neutral);
+        }
+
+        /* 3. Alert Components */
+        .alert {
+            padding: 16px 20px;
+            border-radius: 8px;
+            margin: 16px 0;
+            border-left: 4px solid;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .alert-critical {
+            background: #FED7D7;
+            border-color: var(--danger);
+            color: #742A2A;
+        }
+
+        .alert-warning {
+            background: #FEFCBF;
+            border-color: var(--warning);
+            color: #744210;
+        }
+
+        .alert-success {
+            background: #C6F6D5;
+            border-color: var(--success);
+            color: #22543D;
+        }
+
+        .alert-icon {
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        /* 4. Recommendation Cards */
+        .recommendations-grid {
+            display: grid;
+            gap: 16px;
+            margin: 20px 0;
+        }
+
+        .rec-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .rec-priority {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .rec-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 8px;
+        }
+
+        .rec-details {
+            color: var(--neutral);
+            margin-bottom: 12px;
+        }
+
+        .rec-outcome {
+            background: var(--light-bg);
+            padding: 12px;
+            border-radius: 6px;
+            font-weight: 500;
+            color: var(--success);
+        }
+
+        /* 5. Theme Variations */
+        .theme-baytown {
+            --primary: #2B6CB0;
+            --accent: #3182CE;
+        }
+
+        .theme-humble {
+            --primary: #6B46C1;
+            --accent: #7C3AED;
+        }
+
+        .theme-executive {
+            --primary: #1A202C;
+            --accent: #2D3748;
+        }
+
+        /* Email Container */
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+        }
+
+        .email-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent, var(--primary)) 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .email-body {
+            padding: 30px;
+        }
+
+        /* Component Usage Examples */
+        .component-demo {
+            border: 2px dashed #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            background: #fafafa;
+        }
+
+        .component-label {
+            background: #4299e1;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+            margin-bottom: 12px;
+        }
+
+        .code-snippet {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            margin: 12px 0;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--neutral);
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="demo-container">
+        <div class="demo-header">
+            <h1>🦷 Dental Analytics Email Framework</h1>
+            <p>Professional, component-based email styling system for KamDental practice reports</p>
+        </div>
+
+        <!-- Component Library Section -->
+        <div class="demo-section">
+            <div class="demo-section-header">
+                📦 Component Library
+            </div>
+            <div class="demo-content">
+                <div class="tabs">
+                    <button class="tab active" onclick="showTab('metrics')">Metric Cards</button>
+                    <button class="tab" onclick="showTab('providers')">Provider Lists</button>
+                    <button class="tab" onclick="showTab('alerts')">Alert Banners</button>
+                    <button class="tab" onclick="showTab('recommendations')">Recommendations</button>
+                </div>
+
+                <!-- Metrics Tab -->
+                <div id="metrics" class="tab-content active">
+                    <div class="component-demo">
+                        <span class="component-label">COMPONENT: Metric Cards</span>
+                        <div class="metric-grid">
+                            <div class="metric-card">
+                                <div class="metric-label">MTD Production</div>
+                                <div class="metric-value status-behind">$143,343</div>
+                                <div class="metric-subtitle">89.6% to goal</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">Collections</div>
+                                <div class="metric-value">$107,113</div>
+                                <div class="metric-subtitle">74.7% ratio</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">Case Acceptance</div>
+                                <div class="metric-value status-good">35.86%</div>
+                                <div class="metric-subtitle">Strong performance</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">Call Answer Rate</div>
+                                <div class="metric-value status-warning">69.3%</div>
+                                <div class="metric-subtitle">Below 85% goal</div>
+                            </div>
+                        </div>
+                        <div class="code-snippet">
+                            &lt;div class="metric-grid"&gt;
+                            &lt;div class="metric-card"&gt;
+                            &lt;div class="metric-label"&gt;MTD Production&lt;/div&gt;
+                            &lt;div class="metric-value status-behind"&gt;$143,343&lt;/div&gt;
+                            &lt;div class="metric-subtitle"&gt;89.6% to goal&lt;/div&gt;
+                            &lt;/div&gt;
+                            &lt;/div&gt;</div>
+                    </div>
+                </div>
+
+                <!-- Providers Tab -->
+                <div id="providers" class="tab-content">
+                    <div class="component-demo">
+                        <span class="component-label">COMPONENT: Provider Performance</span>
+                        <div class="provider-list">
+                            <div class="provider-item">
+                                <div class="provider-info">
+                                    <h4>Dr. Obinna Ezeji</h4>
+                                    <div class="provider-role">Lead Producer</div>
+                                </div>
+                                <div class="provider-stats">
+                                    <div class="provider-production status-good">$68,053</div>
+                                    <div class="provider-goal">75.6% to goal</div>
+                                </div>
+                            </div>
+                            <div class="provider-item">
+                                <div class="provider-info">
+                                    <h4>Adriane (DHAA)</h4>
+                                    <div class="provider-role">Hygienist</div>
+                                </div>
+                                <div class="provider-stats">
+                                    <div class="provider-production status-good">$21,418</div>
+                                    <div class="provider-goal">89.2% to goal</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="code-snippet">
+                            &lt;div class="provider-list"&gt;
+                            &lt;div class="provider-item"&gt;
+                            &lt;div class="provider-info"&gt;
+                            &lt;h4&gt;Dr. Obinna Ezeji&lt;/h4&gt;
+                            &lt;div class="provider-role"&gt;Lead Producer&lt;/div&gt;
+                            &lt;/div&gt;
+                            &lt;div class="provider-stats"&gt;
+                            &lt;div class="provider-production status-good"&gt;$68,053&lt;/div&gt;
+                            &lt;/div&gt;
+                            &lt;/div&gt;
+                            &lt;/div&gt;</div>
+                    </div>
+                </div>
+
+                <!-- Alerts Tab -->
+                <div id="alerts" class="tab-content">
+                    <div class="component-demo">
+                        <span class="component-label">COMPONENT: Alert Banners</span>
+                        <div class="alert alert-critical">
+                            <div class="alert-icon">🚨</div>
+                            <div>
+                                <strong>Critical Issue:</strong> Call answer rate at 69.3% vs 85% goal - losing 16% of
+                                potential revenue
+                            </div>
+                        </div>
+                        <div class="alert alert-warning">
+                            <div class="alert-icon">⚠️</div>
+                            <div>
+                                <strong>Action Required:</strong> 26 new patients need hygiene appointments scheduled
+                            </div>
+                        </div>
+                        <div class="alert alert-success">
+                            <div class="alert-icon">✅</div>
+                            <div>
+                                <strong>Excellent Performance:</strong> Case acceptance rate of 35.86% exceeds industry
+                                average
+                            </div>
+                        </div>
+                        <div class="code-snippet">
+                            &lt;div class="alert alert-critical"&gt;
+                            &lt;div class="alert-icon"&gt;🚨&lt;/div&gt;
+                            &lt;div&gt;&lt;strong&gt;Critical Issue:&lt;/strong&gt; Your message here&lt;/div&gt;
+                            &lt;/div&gt;</div>
+                    </div>
+                </div>
+
+                <!-- Recommendations Tab -->
+                <div id="recommendations" class="tab-content">
+                    <div class="component-demo">
+                        <span class="component-label">COMPONENT: Recommendation Cards</span>
+                        <div class="recommendations-grid">
+                            <div class="rec-card">
+                                <div class="rec-priority">IMMEDIATE</div>
+                                <div class="rec-title">Phone Coverage Improvement</div>
+                                <div class="rec-details">
+                                    • Target 85% answer rate by month-end<br>
+                                    • Implement dedicated coverage during peak hours
+                                </div>
+                                <div class="rec-outcome">Expected outcome: $13,000+ additional production</div>
+                            </div>
+                            <div class="rec-card">
+                                <div class="rec-priority">HIGH</div>
+                                <div class="rec-title">Dr. Ezeji Production Acceleration</div>
+                                <div class="rec-details">
+                                    • Schedule high-value crown and root canal cases<br>
+                                    • Maximize remaining production days
+                                </div>
+                                <div class="rec-outcome">Target: Push from 75.6% to 85%+ of goal</div>
+                            </div>
+                        </div>
+                        <div class="code-snippet">
+                            &lt;div class="rec-card"&gt;
+                            &lt;div class="rec-priority"&gt;IMMEDIATE&lt;/div&gt;
+                            &lt;div class="rec-title"&gt;Phone Coverage Improvement&lt;/div&gt;
+                            &lt;div class="rec-details"&gt;Action items here&lt;/div&gt;
+                            &lt;div class="rec-outcome"&gt;Expected outcome&lt;/div&gt;
+                            &lt;/div&gt;</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Email Mock-ups Section -->
+        <div class="demo-section">
+            <div class="demo-section-header">
+                📧 Email Mock-ups with Different Themes
+            </div>
+            <div class="demo-content">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px;">
+
+                    <!-- Baytown Theme -->
+                    <div class="email-container theme-baytown">
+                        <div class="email-header">
+                            <h3 style="margin: 0;">Baytown Practice Report</h3>
+                            <p style="margin: 5px 0 0 0; opacity: 0.9;">MTD July 2025</p>
+                        </div>
+                        <div class="email-body">
+                            <div class="alert alert-critical">
+                                <div class="alert-icon">🚨</div>
+                                <div><strong>$16,656 behind goal</strong></div>
+                            </div>
+                            <div class="metric-grid">
+                                <div class="metric-card">
+                                    <div class="metric-label">Production</div>
+                                    <div class="metric-value status-behind">$143K</div>
+                                </div>
+                                <div class="metric-card">
+                                    <div class="metric-label">Collections</div>
+                                    <div class="metric-value">$107K</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Humble Theme -->
+                    <div class="email-container theme-humble">
+                        <div class="email-header">
+                            <h3 style="margin: 0;">Humble Practice Report</h3>
+                            <p style="margin: 5px 0 0 0; opacity: 0.9;">MTD July 2025</p>
+                        </div>
+                        <div class="email-body">
+                            <div class="alert alert-success">
+                                <div class="alert-icon">✅</div>
+                                <div><strong>On track to goal</strong></div>
+                            </div>
+                            <div class="metric-grid">
+                                <div class="metric-card">
+                                    <div class="metric-label">Production</div>
+                                    <div class="metric-value status-good">$178K</div>
+                                </div>
+                                <div class="metric-card">
+                                    <div class="metric-label">Collections</div>
+                                    <div class="metric-value status-good">$156K</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Executive Theme -->
+                    <div class="email-container theme-executive">
+                        <div class="email-header">
+                            <h3 style="margin: 0;">Executive Summary</h3>
+                            <p style="margin: 5px 0 0 0; opacity: 0.9;">Multi-Location Report</p>
+                        </div>
+                        <div class="email-body">
+                            <div class="provider-list">
+                                <div class="provider-item">
+                                    <div class="provider-info">
+                                        <h4>Baytown</h4>
+                                        <div class="provider-role">Behind Schedule</div>
+                                    </div>
+                                    <div class="provider-stats">
+                                        <div class="provider-production status-behind">$143K</div>
+                                    </div>
+                                </div>
+                                <div class="provider-item">
+                                    <div class="provider-info">
+                                        <h4>Humble</h4>
+                                        <div class="provider-role">On Track</div>
+                                    </div>
+                                    <div class="provider-stats">
+                                        <div class="provider-production status-good">$178K</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Implementation Section -->
+        <div class="demo-section">
+            <div class="demo-section-header">
+                🛠️ Framework Implementation
+            </div>
+            <div class="demo-content">
+                <h3>How It Would Work:</h3>
+                <div class="code-snippet">
+                    // 1. Your MCP tool imports the framework
+                    &lt;link rel="stylesheet" href="kamdental-email-framework.css"&gt;
+
+                    // 2. Use pre-built components
+                    &lt;div class="metric-grid"&gt;
+                    &lt;div class="metric-card"&gt;
+                    &lt;div class="metric-label"&gt;{{METRIC_NAME}}&lt;/div&gt;
+                    &lt;div class="metric-value {{STATUS_CLASS}}"&gt;{{VALUE}}&lt;/div&gt;
+                    &lt;div class="metric-subtitle"&gt;{{SUBTITLE}}&lt;/div&gt;
+                    &lt;/div&gt;
+                    &lt;/div&gt;
+
+                    // 3. Apply themes
+                    &lt;div class="email-container theme-baytown"&gt;
+                    // Email content here
+                    &lt;/div&gt;</div>
+
+                <h3>Benefits:</h3>
+                <ul>
+                    <li><strong>Consistency:</strong> Every email looks professional and on-brand</li>
+                    <li><strong>Efficiency:</strong> Pre-built components reduce development time by 80%</li>
+                    <li><strong>Maintenance:</strong> Update styles in one place, affects all emails</li>
+                    <li><strong>Responsive:</strong> Automatically works on all devices</li>
+                    <li><strong>Themes:</strong> Different styles for different audiences</li>
+                </ul>
+
+                <h3>File Structure:</h3>
+                <div class="code-snippet">
+                    dental-email-framework/
+                    ├── core/
+                    │ ├── variables.css # Colors, fonts, spacing
+                    │ ├── base.css # Reset and base styles
+                    │ └── utilities.css # Helper classes
+                    ├── components/
+                    │ ├── metrics.css # Metric cards and grids
+                    │ ├── providers.css # Provider performance lists
+                    │ ├── alerts.css # Warning and success banners
+                    │ └── recommendations.css # Action item cards
+                    ├── themes/
+                    │ ├── baytown.css # Baytown location theme
+                    │ ├── humble.css # Humble location theme
+                    │ └── executive.css # Executive summary theme
+                    └── kamdental-email.css # Complete compiled framework</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showTab(tabName) {
+            // Hide all tab contents
+            const contents = document.querySelectorAll('.tab-content');
+            contents.forEach(content => content.classList.remove('active'));
+
+            // Remove active class from all tabs
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+
+            // Show selected tab content
+            document.getElementById(tabName).classList.add('active');
+
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+        }
+    </script>
+</body>
+
+</html>
