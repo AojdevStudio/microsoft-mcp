@@ -1,10 +1,12 @@
 """
 Practice Report email template for KamDental
 Refactored for improved maintainability and reusability
+SECURITY: All user inputs are now properly escaped to prevent XSS attacks
 """
 
 from typing import Dict, Any, List, Optional
 from datetime import datetime
+from markupsafe import escape, Markup
 from .base import EmailTemplate
 
 
@@ -68,13 +70,17 @@ class PracticeReportTemplate(EmailTemplate):
         """
         
     def _build_header(self, location: str, period: str) -> str:
-        """Build the header section"""
-        return f"""
+        """Build the header section with proper escaping"""
+        # SECURITY: Escape user inputs to prevent XSS
+        safe_location = escape(location)
+        safe_period = escape(period)
+        
+        return Markup(f"""
         <div class="header">
-            <h1 class="text-center">{location} Practice Report</h1>
-            <p class="text-center text-light">{period}</p>
+            <h1 class="text-center">{safe_location} Practice Report</h1>
+            <p class="text-center text-light">{safe_period}</p>
         </div>
-        """
+        """)
         
     def _build_financial_metrics(self, financial: Dict[str, Any]) -> str:
         """Build the financial metrics section"""
@@ -102,7 +108,7 @@ class PracticeReportTemplate(EmailTemplate):
         call_answer_goal = call_answer.get("goal", 0.95)
         call_answer_status = self.get_status_class(call_answer_value, call_answer_goal)
         
-        return f"""
+        return Markup(f"""
         <div class="metric-grid">
             <div class="metric-row">
                 <div class="metric-col">
@@ -141,30 +147,32 @@ class PracticeReportTemplate(EmailTemplate):
                 </div>
             </div>
         </div>
-        """
+        """)
         
     def _build_providers_section(self, providers: List[Dict[str, Any]]) -> str:
-        """Build the providers performance section"""
+        """Build the providers performance section with proper escaping"""
         if not providers:
             return ""
             
         # Sort providers by production (highest first)
         sorted_providers = sorted(providers, key=lambda p: p.get("production", 0), reverse=True)
         
-        # Build table rows
+        # Build table rows with escaped data
         rows = []
         for provider in sorted_providers:
-            name = provider["name"]
+            # SECURITY: Escape all user-provided data
+            name = escape(provider["name"])
             production = provider.get("production", 0)
-            role = provider.get("role", "Provider")
+            role = escape(provider.get("role", "Provider"))
             goal_percentage = provider.get("goal_percentage", production / 100000)  # Default goal of 100k
             status_class = self.get_status_class(goal_percentage, 1.0)
             
+            # Note: We use Markup here because we want the HTML tags, but the content is escaped
             rows.append([
-                f"<strong>{name}</strong>",
-                role,
+                Markup(f"<strong>{name}</strong>"),
+                str(role),
                 self.format_currency(production),
-                f'<span class="{status_class}">{self.format_percentage(goal_percentage)}</span>'
+                Markup(f'<span class="{escape(status_class)}">{self.format_percentage(goal_percentage)}</span>')
             ])
             
         table_html = self.build_data_table(
@@ -172,12 +180,12 @@ class PracticeReportTemplate(EmailTemplate):
             rows
         )
         
-        return f"""
+        return Markup(f"""
         <div class="section">
             <h2 class="section-header">Provider Performance</h2>
             {table_html}
         </div>
-        """
+        """)
         
     def _build_alerts_section(self, alerts: List[Dict[str, Any]]) -> str:
         """Build the alerts section"""
@@ -193,46 +201,48 @@ class PracticeReportTemplate(EmailTemplate):
             if alert_type == "critical":
                 alert_type = "danger"
                 
+            # build_alert already handles escaping
             alerts_html.append(self.build_alert(title, message, alert_type))
             
-        return f"""
+        return Markup(f"""
         <div class="section">
             <h2 class="section-header">Alerts & Notifications</h2>
-            {"".join(alerts_html)}
+            {"".join(str(a) for a in alerts_html)}
         </div>
-        """
+        """)
         
     def _build_recommendations_section(self, recommendations: List[Dict[str, Any]]) -> str:
-        """Build the recommendations section"""
+        """Build the recommendations section with proper escaping"""
         if not recommendations:
             return ""
             
         rec_items = []
         for rec in recommendations:
-            priority = rec.get("priority", "Medium")
-            title = rec.get("title", "")
-            details = rec.get("details", "")
-            outcome = rec.get("outcome", "")
+            # SECURITY: Escape all user inputs
+            priority = escape(rec.get("priority", "Medium"))
+            title = escape(rec.get("title", ""))
+            details = escape(rec.get("details", ""))
+            outcome = escape(rec.get("outcome", ""))
             
             priority_class = f"priority-{priority.lower()}"
-            priority_badge = f'<span class="recommendation-priority {priority_class}">{priority.upper()}</span>'
+            priority_badge = Markup(f'<span class="recommendation-priority {escape(priority_class)}">{priority.upper()}</span>')
             
-            outcome_html = f'<div class="text-sm text-light mt-2">{outcome}</div>' if outcome else ''
+            outcome_html = Markup(f'<div class="text-sm text-light mt-2">{outcome}</div>') if outcome else ''
             
-            rec_items.append(f"""
+            rec_items.append(Markup(f"""
             <div class="recommendation-item">
                 <div class="font-semibold">{title} {priority_badge}</div>
                 <div class="mt-1">{details}</div>
                 {outcome_html}
             </div>
-            """)
+            """))
             
-        return f"""
+        return Markup(f"""
         <div class="recommendations">
             <h2 class="recommendations-header">Recommendations</h2>
-            {"".join(rec_items)}
+            {"".join(str(r) for r in rec_items)}
         </div>
-        """
+        """)
         
     def generate_sample_data(self) -> Dict[str, Any]:
         """Generate sample data for testing"""

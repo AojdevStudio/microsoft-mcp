@@ -1,11 +1,13 @@
 """
 Validation utilities for email framework
 Provides comprehensive validation for email data and templates
+SECURITY: Includes XSS prevention and input sanitization functions
 """
 
 from typing import Dict, Any, List, Optional, Union, Callable
 import re
 from datetime import datetime
+from markupsafe import escape
 
 
 class ValidationError(ValueError):
@@ -429,3 +431,147 @@ def create_validator(
         return result
         
     return validator
+
+
+# ===== SECURITY FUNCTIONS =====
+
+def validate_email_data(data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Validate and sanitize email template data by escaping all string values
+    This prevents XSS attacks by ensuring all user inputs are properly escaped
+    
+    Args:
+        data: Dictionary containing email template data
+        
+    Returns:
+        Dictionary with all string values escaped
+    """
+    if not isinstance(data, dict):
+        return data
+        
+    validated = {}
+    for key, value in data.items():
+        if isinstance(value, str):
+            # Escape all string values to prevent XSS
+            validated[key] = escape(value)
+        elif isinstance(value, dict):
+            # Recursively validate nested dictionaries
+            validated[key] = validate_email_data(value)
+        elif isinstance(value, list):
+            # Validate each item in lists
+            validated[key] = [
+                validate_email_data(item) if isinstance(item, dict) 
+                else escape(item) if isinstance(item, str)
+                else item
+                for item in value
+            ]
+        else:
+            # Non-string values are safe
+            validated[key] = value
+            
+    return validated
+
+
+def validate_url(url: str) -> str:
+    """
+    Validate URL to prevent javascript: and other dangerous protocols
+    
+    Args:
+        url: URL to validate
+        
+    Returns:
+        Validated URL
+        
+    Raises:
+        ValueError: If URL contains dangerous protocol
+    """
+    if not isinstance(url, str):
+        raise ValueError("URL must be a string")
+        
+    # List of allowed protocols
+    allowed_protocols = ['http://', 'https://', 'mailto:', '/']
+    
+    # Check if URL starts with a dangerous protocol
+    dangerous_protocols = [
+        'javascript:', 'data:', 'vbscript:', 'file:', 'about:'
+    ]
+    
+    url_lower = url.lower().strip()
+    
+    for protocol in dangerous_protocols:
+        if url_lower.startswith(protocol):
+            raise ValueError(f"Invalid URL protocol: {protocol} URLs are not allowed")
+    
+    # If URL doesn't start with allowed protocol and isn't relative, reject it
+    if not any(url_lower.startswith(p) for p in allowed_protocols) and not url.startswith('/'):
+        # Check if it's a relative path without protocol
+        if ':' in url.split('/')[0]:
+            raise ValueError(f"Invalid URL: Unknown protocol")
+    
+    return url
+
+
+def add_security_headers(html: str) -> str:
+    """
+    Add security headers to the HTML email to prevent content injection
+    
+    Args:
+        html: HTML content
+        
+    Returns:
+        HTML with security headers added
+    """
+    # Security headers as HTML comments (for email clients that support them)
+    security_headers = """<!--
+Content-Security-Policy: default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none';
+X-Content-Type-Options: nosniff
+X-XSS-Protection: 1; mode=block
+-->
+"""
+    
+    # Insert security headers after DOCTYPE but before html tag
+    if '<!DOCTYPE' in html:
+        parts = html.split('<html', 1)
+        if len(parts) == 2:
+            return parts[0] + security_headers + '<html' + parts[1]
+    
+    # Fallback: add at the beginning
+    return security_headers + html
+
+
+def sanitize_html_attribute(value: str) -> str:
+    """
+    Sanitize a value for use in HTML attributes
+    
+    Args:
+        value: Value to sanitize
+        
+    Returns:
+        Sanitized value safe for HTML attributes
+    """
+    # Escape quotes and other special characters
+    return escape(value).replace('"', '&quot;').replace("'", '&#39;')
+
+
+def is_safe_css_value(value: str) -> bool:
+    """
+    Check if a CSS value is safe (doesn't contain JavaScript)
+    
+    Args:
+        value: CSS value to check
+        
+    Returns:
+        True if safe, False otherwise
+    """
+    if not isinstance(value, str):
+        return True
+        
+    value_lower = value.lower()
+    
+    # Check for dangerous patterns
+    dangerous_patterns = [
+        'javascript:', 'expression(', 'behavior:', 'binding:',
+        '-moz-binding:', 'vbscript:', '@import'
+    ]
+    
+    return not any(pattern in value_lower for pattern in dangerous_patterns)

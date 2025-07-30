@@ -1,0 +1,98 @@
+# Files to Work On - Email Framework Security Fix (SEC-001)
+# Priority: URGENT - Security Critical
+
+## PHASE 1: CRITICAL SECURITY FIXES (Must fix immediately)
+
+### Primary XSS Vulnerability Files:
+1. src/microsoft_mcp/email_framework/templates/base.py
+   - Line 74: Direct HTML insertion without escaping
+   - All template utility methods that handle user data
+   - Add HTML escaping to all user inputs
+
+2. src/microsoft_mcp/email_framework/templates/practice_report.py  
+   - Lines 74-75: User data inserted without sanitization
+   - _build_header method (lines 70-77)
+   - All methods that insert user-provided data
+
+### All Template Files (Audit for XSS):
+3. src/microsoft_mcp/email_framework/templates/provider_update.py
+4. src/microsoft_mcp/email_framework/templates/executive_summary.py
+5. src/microsoft_mcp/email_framework/templates/alert_notification.py
+
+### Security Test Creation:
+6. tests/security/test_xss_prevention.py (CREATE NEW)
+   - Comprehensive XSS prevention tests
+   - Test all malicious payloads
+   - Verify HTML escaping
+
+## PHASE 2: TEST SUITE REMEDIATION
+
+### Failing Test Files:
+7. tests/email_framework/test_email_client_compatibility.py
+   - Fix Gmail compatibility assertions
+   - Update HTML structure validation
+
+8. tests/email_framework/test_performance.py
+   - Fix mocking patterns
+   - Update async operation mocks
+
+9. tests/email_framework/test_templates.py
+   - Fix template assertions
+   - Add security validation tests
+
+10. tests/email_framework/test_css_inliner.py
+    - Add edge case tests
+    - Test malformed CSS handling
+
+## PHASE 3: CODE QUALITY & ARCHITECTURE
+
+### CSS Processing:
+11. src/microsoft_mcp/email_framework/css_inliner.py
+    - Replace regex parsing with premailer
+    - Add comprehensive error handling
+    - Improve robustness
+
+### Validation Layer:
+12. src/microsoft_mcp/email_framework/validators.py
+    - Add input sanitization functions
+    - Create validation decorators
+    - Implement security checks
+
+### Framework Core:
+13. src/microsoft_mcp/email_framework/renderer.py
+    - Add security headers
+    - Implement safe rendering pipeline
+    - Add error boundaries
+
+### Main Integration:
+14. src/microsoft_mcp/email_framework/__init__.py
+    - Update exports
+    - Add security utilities
+
+## DEPENDENCY FILES
+
+### Package Dependencies:
+15. pyproject.toml
+    - Add markupsafe dependency
+    - Add premailer dependency
+    - Update test dependencies
+
+### Documentation:
+16. docs/security/xss-prevention-patterns.md (CREATE NEW)
+    - Document security patterns
+    - Provide secure coding guidelines
+    - Include examples
+
+## CRITICAL PATH
+
+IMMEDIATE ACTIONS (Block production until complete):
+1. Fix XSS in base.py:74
+2. Fix XSS in practice_report.py:74-75
+3. Install markupsafe and implement escaping
+4. Create and run XSS prevention tests
+
+VALIDATION REQUIREMENTS:
+- All user inputs must be escaped
+- No direct HTML insertion from user data
+- Content Security Policy headers added
+- 100% test pass rate achieved

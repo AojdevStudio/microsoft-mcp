@@ -1,12 +1,14 @@
 """
 Base email template class for KamDental Email Framework
 Refactored for better maintainability and modularity
+SECURITY: All user inputs are now properly escaped to prevent XSS attacks
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Union
 import re
 from datetime import datetime
+from markupsafe import escape, Markup
 
 from ..css import (
     get_base_styles,
@@ -17,12 +19,14 @@ from ..css import (
     THEME_REGISTRY
 )
 from ..css_inliner import inline_css, minify_css, get_css_size
+from ..validators import validate_url, add_security_headers
 
 
 class EmailTemplate(ABC):
     """
     Base class for all email templates.
     Provides common functionality and enforces template structure.
+    SECURITY: Implements automatic HTML escaping for all user inputs
     """
     
     def __init__(self, theme: str = "baytown"):
@@ -75,14 +79,14 @@ class EmailTemplate(ABC):
         
     def render(self, data: Dict[str, Any], inline_styles: bool = True) -> str:
         """
-        Render the complete email template
+        Render the complete email template with security protections
         
         Args:
             data: Template data dictionary
             inline_styles: Whether to inline CSS styles
             
         Returns:
-            Complete HTML email
+            Complete HTML email with security headers
             
         Raises:
             ValueError: If data validation fails
@@ -105,6 +109,9 @@ class EmailTemplate(ABC):
             
         # Apply final optimizations
         html = self._optimize_html(html)
+        
+        # Add security headers
+        html = add_security_headers(html)
         
         return html
         
@@ -152,6 +159,9 @@ class EmailTemplate(ABC):
         """Build HTML with CSS in style tags (for testing/preview)"""
         css = self.get_css()
         
+        # SECURITY: Escape template name to prevent XSS
+        template_name = escape(self.get_template_name())
+        
         html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -159,7 +169,7 @@ class EmailTemplate(ABC):
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>{self.get_template_name()} - KamDental</title>
+    <title>{template_name} - KamDental</title>
     <style>
         {css}
     </style>
@@ -172,6 +182,9 @@ class EmailTemplate(ABC):
         
     def _get_html_structure(self, content: str) -> str:
         """Get the complete HTML structure"""
+        # SECURITY: Escape template name to prevent XSS
+        template_name = escape(self.get_template_name())
+        
         return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -179,7 +192,7 @@ class EmailTemplate(ABC):
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>{self.get_template_name()} - KamDental</title>
+    <title>{template_name} - KamDental</title>
 </head>
 <body>
     {self._get_html_wrapper(content)}
@@ -291,49 +304,78 @@ class EmailTemplate(ABC):
             return "status-behind"
             
     def build_metric_card(self, label: str, value: str, subtitle: str = "", status_class: str = "") -> str:
-        """Build a metric card HTML"""
-        subtitle_html = f'<div class="metric-subtitle">{subtitle}</div>' if subtitle else ''
+        """Build a metric card HTML with proper escaping"""
+        # SECURITY: Escape all user inputs to prevent XSS
+        safe_label = escape(label)
+        safe_value = escape(value)
+        safe_subtitle = escape(subtitle) if subtitle else ""
+        safe_status_class = escape(status_class)
         
-        return f"""
+        subtitle_html = f'<div class="metric-subtitle">{safe_subtitle}</div>' if subtitle else ''
+        
+        return Markup(f"""
 <div class="metric-card">
-    <div class="metric-label">{label}</div>
-    <div class="metric-value {status_class}">{value}</div>
+    <div class="metric-label">{safe_label}</div>
+    <div class="metric-value {safe_status_class}">{safe_value}</div>
     {subtitle_html}
-</div>"""
+</div>""")
         
     def build_alert(self, title: str, message: str, alert_type: str = "info") -> str:
-        """Build an alert HTML"""
-        return f"""
-<div class="alert alert-{alert_type}">
-    <div class="alert-header">{title}</div>
-    <div class="alert-body">{message}</div>
-</div>"""
+        """Build an alert HTML with proper escaping"""
+        # SECURITY: Escape all user inputs to prevent XSS
+        safe_title = escape(title)
+        safe_message = escape(message)
+        safe_alert_type = escape(alert_type)
+        
+        return Markup(f"""
+<div class="alert alert-{safe_alert_type}">
+    <div class="alert-header">{safe_title}</div>
+    <div class="alert-body">{safe_message}</div>
+</div>""")
         
     def build_button(self, text: str, url: str, style: str = "primary", full_width: bool = False) -> str:
-        """Build a button HTML"""
+        """Build a button HTML with URL validation and text escaping"""
+        # SECURITY: Validate URL to prevent javascript: injection
+        safe_url = validate_url(url)
+        # SECURITY: Escape button text to prevent XSS
+        safe_text = escape(text)
+        safe_style = escape(style)
+        
         width_class = "button-full" if full_width else ""
         
-        return f"""
-<a href="{url}" class="button button-{style} {width_class}">{text}</a>"""
+        return Markup(f"""
+<a href="{safe_url}" class="button button-{safe_style} {width_class}">{safe_text}</a>""")
         
-    def build_data_table(self, headers: List[str], rows: List[List[str]], css_class: str = "data-table") -> str:
-        """Build a data table HTML"""
-        header_html = "".join(f"<th>{h}</th>" for h in headers)
+    def build_data_table(self, headers: List[str], rows: List[List[Union[str, Markup]]], css_class: str = "data-table") -> str:
+        """Build a data table HTML with proper escaping"""
+        # SECURITY: Escape all headers to prevent XSS
+        safe_headers = [escape(h) for h in headers]
+        header_html = "".join(f"<th>{h}</th>" for h in safe_headers)
         
+        # SECURITY: Handle both string and Markup cells
         rows_html = []
         for row in rows:
-            cells = "".join(f"<td>{cell}</td>" for cell in row)
-            rows_html.append(f"<tr>{cells}</tr>")
+            cells_html = []
+            for cell in row:
+                if isinstance(cell, Markup):
+                    # Already safe HTML from our own methods
+                    cells_html.append(f"<td>{cell}</td>")
+                else:
+                    # Escape string content
+                    cells_html.append(f"<td>{escape(cell)}</td>")
+            rows_html.append(f"<tr>{''.join(cells_html)}</tr>")
+        
+        safe_css_class = escape(css_class)
             
-        return f"""
-<table class="{css_class}">
+        return Markup(f"""
+<table class="{safe_css_class}">
     <thead>
         <tr>{header_html}</tr>
     </thead>
     <tbody>
         {"".join(rows_html)}
     </tbody>
-</table>"""
+</table>""")
         
     def get_email_size(self) -> Dict[str, int]:
         """Get size information for the email"""
