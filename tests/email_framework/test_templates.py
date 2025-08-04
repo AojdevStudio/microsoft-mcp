@@ -4,8 +4,7 @@ Tests template rendering, data validation, and theme selection.
 """
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
-from typing import Dict, Any
+from unittest.mock import Mock, patch
 
 
 class TestEmailTemplateBase:

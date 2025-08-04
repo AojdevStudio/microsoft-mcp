@@ -5,9 +5,7 @@ Tests render time, size constraints, and efficiency metrics.
 
 import pytest
 import time
-from unittest.mock import Mock, patch
-from typing import Dict, Any
-import json
+from unittest.mock import patch
 
 
 class TestRenderPerformance:

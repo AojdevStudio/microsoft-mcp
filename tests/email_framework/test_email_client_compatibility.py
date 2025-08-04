@@ -4,8 +4,7 @@ Tests rendering across different email clients and platforms.
 """
 
 import pytest
-from unittest.mock import Mock, patch
-from typing import Dict, List
+from unittest.mock import patch
 
 
 class TestEmailClientCompatibility:

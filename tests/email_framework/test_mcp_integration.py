@@ -4,8 +4,7 @@ Tests new email tools and their integration with Microsoft Graph API.
 """
 
 import pytest
-from unittest.mock import Mock, patch, call
-from typing import Dict, Any, List
+from unittest.mock import patch
 
 
 class TestMCPToolIntegration:
