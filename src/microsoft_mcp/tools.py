@@ -221,10 +221,10 @@ def ensure_html_structure(content: str) -> str:
 
     # Style class mappings for email-safe inline styles
     style_mappings = {
-        "header": "background-color: #667eea; color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;",
-        "section": "background-color: #f8f9fa; padding: 20px; margin: 15px 0; border-radius: 8px; border-left: 4px solid #667eea;",
+        "header": "background-color: #234bfb; color: black; padding: 20px; border-radius: 8px; margin-bottom: 20px;",
+        "section": "background-color: #74b8fb; padding: 20px; margin: 15px 0; border-radius: 8px; border-left: 4px solid #234bfb;",
         "highlight": "background-color: #e3f2fd; padding: 15px; border-radius: 6px; margin: 10px 0;",
-        "strong-yes": "background-color: #28a745; color: white; padding: 10px; border-radius: 6px; text-align: center; font-weight: bold; font-size: 18px;",
+        "strong-yes": "background-color: #28a745; color: black; padding: 10px; border-radius: 6px; text-align: center; font-weight: bold; font-size: 18px;",
     }
 
     # Signature HTML template
@@ -2238,7 +2238,7 @@ def search_people(
     Returns:
         List of people matching the search
     """
-    endpoint = f"/me/people"
+    endpoint = "/me/people"
     params = {"$search": f'"{query}"', "$top": min(limit, 50), "$select": "id,displayName,emailAddresses,jobTitle,department,officeLocation"}
 
     people = list(graph.paginate(endpoint, account_id, params=params, max_items=limit))
