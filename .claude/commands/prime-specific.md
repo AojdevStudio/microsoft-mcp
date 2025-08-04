@@ -1,9 +1,9 @@
 ---
-allowed-tools: Bash, Read
+allowed-tools: Bash, Read, Eza
 description: Load essential project context by analyzing codebase structure and core docs
 ---
 
-# Prime
+# Prime Specific
 
 This command provides a lean, focused overview of the project by examining the codebase structure and core documentation for efficient context loading.
 
@@ -19,15 +19,13 @@ Directory-to-read: $ARGUMENTS
 task_definition:
   # Specific steps to be executed for the analysis
   instructions:
-    - description: 'Run `git ls-files` to understand the codebase structure and file organization.'
-      command: 'git ls-files'
-    - description: 'Read the README.md to understand the project purpose, setup instructions, and key information.'
-      file: 'README.md'
-    - description: 'Read the CHANGELOG.md to understand recent changes and version history.'
-      file: 'CHANGELOG.md'
-    - IMPORTANT: 'Read $ARGUMENTS to understand users request' 
-    - description: 'Provide a concise overview of the project structure and purpose.'
-      outcome: 'Concise overview document'
+    - 1. 'Run `eza --tree` to understand the codebase structure and file organization.'
+      command: 'eza --tree'
+    - 2. 'Run `eza -l --group-directories-first` to understand the codebase structure and file organization.'
+      command: 'eza -l --group-directories-first'
+    - 3. 'Run `eza -la --git` to show hidden files with git status'
+      command: 'eza -la --git'
+    - 4. 'IMPORTANT: Read $ARGUMENTS to understand users request' 
 
   # The primary focus of the analysis report
   analysis_focus:
@@ -36,13 +34,13 @@ task_definition:
   # Input sources providing context for the analysis task
   context_sources:
     - type: 'Codebase Structure'
-      source_command: '!`git ls-files`'
-    - type: 'Project Overview'
-      source_file: '@README.md'
+      source_command: '!`eza --tree`'
+    - type: 'User Instructions'
+      source_file: '@CLAUDE.md'
     - type: 'Recent Changes'
-      source_file: '@CHANGELOG.md'
+      source_command: '!`eza -l --sort=modified`'
 
   # Important notes regarding the operational workflow
   workflow_notes:
-    - 'Parallel development workflows are loaded via CLAUDE.md automatically.'
+    - 'Claude AI is the main developer of this project, while the user is the stakeholder.'
 ```
