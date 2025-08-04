@@ -3,7 +3,6 @@ Base CSS styles for email templates
 Foundation styles that work across all email clients
 """
 
-from typing import Dict
 
 
 def get_base_styles() -> str:

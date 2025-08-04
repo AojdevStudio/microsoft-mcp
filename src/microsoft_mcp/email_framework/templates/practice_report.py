@@ -3,7 +3,7 @@ Practice Report email template for KamDental
 Refactored for improved maintainability and reusability
 """
 
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 from datetime import datetime
 from .base import EmailTemplate
 

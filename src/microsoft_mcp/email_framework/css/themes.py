@@ -3,7 +3,7 @@ Theme system for KamDental email templates
 Provides color schemes and visual styles for different practice locations
 """
 
-from typing import Dict, Any
+from typing import Dict
 
 
 THEME_REGISTRY: Dict[str, Dict[str, str]] = {

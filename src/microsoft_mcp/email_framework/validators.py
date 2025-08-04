@@ -231,7 +231,7 @@ class DataValidator:
             
         try:
             return datetime.strptime(date_str, format_str)
-        except ValueError as e:
+        except ValueError:
             raise ValidationError(
                 f"{field_name} must be a valid date in format {format_str}",
                 field_name,

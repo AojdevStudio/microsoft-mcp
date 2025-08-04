@@ -5,12 +5,11 @@ Verifies functionality, performance, and compatibility
 
 import time
 import sys
-from typing import Dict, Any, List, Tuple
-from datetime import datetime
+from typing import Dict, Any
 
 from .renderer import EmailRenderer
 from .templates.practice_report import PracticeReportTemplate
-from .validators import EmailValidator, DataValidator, ValidationError
+from .validators import EmailValidator, ValidationError
 
 
 class EmailFrameworkTester:

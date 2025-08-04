@@ -3,7 +3,7 @@ Email client compatibility fixes and optimizations
 Ensures CSS works across all major email clients
 """
 
-from typing import Dict, List, Tuple
+from typing import Dict, List
 
 
 def apply_email_compatibility_fixes(css: str) -> str:
