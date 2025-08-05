@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+## [0.2.0] - 2025-08-04
+
+### Added
+
+- ✨ feat: introduce foundational documentation and task framework
+- Add KamDental Professional Email Framework with Templates and Themes (#4) [#4]
+- 🔧 feat(hooks): add post-tool use hook for workflow completion
+- ✨ feat(mcp): enhance Microsoft Graph API integration
+- 🏗️ feat(claude): add comprehensive agent infrastructure
+- 🚀 feat(claude): major command framework enhancement
+- ⚡ feat(hooks): enhance code quality and notification systems
+- 📋 docs: add KamDental Email Framework PRD with comprehensive testing requirements
+- 📄 chore: add .env.example template for environment configuration
+
+### Changed
+
+- ⚙️ config: update Claude settings and gitignore rules
+- 🙈 chore: update .gitignore with project-specific ignores
+
+### Removed
+
+- 🗑️ chore: remove obsolete hook files
+
+### Fixed
+
+- 🧹 style: fix linting errors in Claude hooks
+- 🐛 fix: force HTML formatting for all email functions to ensure professional styling
+
 ### Fixed
 - 🐛 Force HTML formatting for all email functions to ensure professional styling is always applied
 - 🐛 Remove content detection logic that was causing emails to be sent as plain text instead of formatted HTML
@@ -55,5 +84,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🔒 Environment-based client ID configuration
 - 🔒 OAuth2 device flow authentication
 
-[Unreleased]: https://github.com/AojdevStudio/microsoft-mcp/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/org/repo/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/org/repo/releases/tag/v0.2.0
 [0.1.0]: https://github.com/AojdevStudio/microsoft-mcp/releases/tag/v0.1.0

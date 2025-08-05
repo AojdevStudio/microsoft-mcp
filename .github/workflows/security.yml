@@ -1,0 +1,326 @@
+name: Security Scanning
+
+on:
+  schedule:
+    # Run security scans daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+env:
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  # Dependency vulnerability scanning
+  dependency-scan:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install UV
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: |
+          uv sync --dev
+
+      - name: Run pip-audit for dependency vulnerabilities
+        run: |
+          uv run python -m pip install pip-audit
+          uv run python -m pip-audit --format=json --output=pip-audit-report.json
+          uv run python -m pip-audit --format=sarif --output=pip-audit.sarif
+        continue-on-error: true
+
+      - name: Upload pip-audit SARIF results
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: pip-audit.sarif
+          category: pip-audit
+
+      - name: Run Safety check
+        run: |
+          uv run python -m pip install safety
+          uv run python -m safety check --json --output safety-report.json
+          uv run python -m safety check
+        continue-on-error: true
+
+      - name: Upload security scan artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-scan-reports-${{ github.run_id }}
+          path: |
+            pip-audit-report.json
+            pip-audit.sarif
+            safety-report.json
+          retention-days: 30
+
+  # Static analysis security testing (SAST)
+  sast-analysis:
+    name: Static Analysis Security Testing
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install UV
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: |
+          uv sync --dev
+
+      - name: Run Bandit security linter
+        run: |
+          uv run python -m pip install bandit[toml]
+          uv run python -m bandit -r src/ -f json -o bandit-report.json
+          uv run python -m bandit -r src/ -f sarif -o bandit.sarif
+          uv run python -m bandit -r src/
+        continue-on-error: true
+
+      - name: Upload Bandit SARIF results
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: bandit.sarif
+          category: bandit
+
+      - name: Run Semgrep security analysis
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/secrets
+            p/python
+          generateSarif: "1"
+        continue-on-error: true
+
+      - name: Upload security analysis artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sast-reports-${{ github.run_id }}
+          path: |
+            bandit-report.json
+            bandit.sarif
+          retention-days: 30
+
+  # CodeQL analysis for comprehensive security scanning
+  codeql-analysis:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: python
+          # Specify additional queries for enhanced security analysis
+          queries: security-extended,security-and-quality
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install UV
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: |
+          uv sync --dev
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:python"
+
+  # Secret scanning
+  secret-scan:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run TruffleHog secret scanner
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: main
+          head: HEAD
+          extra_args: --debug --only-verified
+
+      - name: Run gitleaks secret scanner
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+
+  # License compliance check
+  license-check:
+    name: License Compliance
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install UV
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: |
+          uv sync --dev
+
+      - name: Check license compatibility
+        run: |
+          uv run python -m pip install pip-licenses
+          uv run python -m pip_licenses --format=json --output-file=licenses-report.json
+          uv run python -m pip_licenses --format=plain --output-file=licenses-plain.txt
+          
+          # Display licenses for review
+          echo "## Dependency Licenses" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat licenses-plain.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Check for problematic licenses
+        run: |
+          # Define problematic licenses (GPL variants that might conflict with commercial use)
+          PROBLEMATIC_LICENSES=("GPL" "LGPL" "AGPL" "Copyleft")
+          
+          echo "Checking for potentially problematic licenses..."
+          FOUND_ISSUES=false
+          
+          for license in "${PROBLEMATIC_LICENSES[@]}"; do
+            if grep -i "$license" licenses-plain.txt; then
+              echo "⚠️  Found potentially problematic license: $license"
+              FOUND_ISSUES=true
+            fi
+          done
+          
+          if [ "$FOUND_ISSUES" = true ]; then
+            echo "::warning::Potentially problematic licenses found. Please review license compatibility."
+          else
+            echo "✅ No obviously problematic licenses found."
+          fi
+
+      - name: Upload license compliance report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: license-compliance-${{ github.run_id }}
+          path: |
+            licenses-report.json
+            licenses-plain.txt
+          retention-days: 30
+
+  # Security summary and notification
+  security-summary:
+    name: Security Summary
+    runs-on: ubuntu-latest
+    needs: [dependency-scan, sast-analysis, codeql-analysis, secret-scan, license-check]
+    if: always()
+    timeout-minutes: 5
+    
+    steps:
+      - name: Create security summary
+        run: |
+          echo "## 🔒 Security Scan Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Scan Results" >> $GITHUB_STEP_SUMMARY
+          
+          # Check results of each job
+          echo "- **Dependency Scan**: ${{ needs.dependency-scan.result == 'success' && '✅ Passed' || '❌ Issues Found' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **SAST Analysis**: ${{ needs.sast-analysis.result == 'success' && '✅ Passed' || '❌ Issues Found' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **CodeQL Analysis**: ${{ needs.codeql-analysis.result == 'success' && '✅ Passed' || '❌ Issues Found' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Secret Scanning**: ${{ needs.secret-scan.result == 'success' && '✅ Passed' || '❌ Issues Found' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **License Check**: ${{ needs.license-check.result == 'success' && '✅ Passed' || '❌ Issues Found' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Provide guidance
+          echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "1. Review any security alerts in the Security tab" >> $GITHUB_STEP_SUMMARY
+          echo "2. Check uploaded artifacts for detailed reports" >> $GITHUB_STEP_SUMMARY
+          echo "3. Address any identified vulnerabilities or policy violations" >> $GITHUB_STEP_SUMMARY
+          echo "4. Update dependencies if security issues are found" >> $GITHUB_STEP_SUMMARY
+
+      - name: Set job status based on critical issues
+        run: |
+          # This step can be configured to fail if critical security issues are found
+          # For now, we'll continue with warnings, but this can be adjusted based on security policy
+          
+          CRITICAL_ISSUES=false
+          
+          # Check if any critical jobs failed
+          if [[ "${{ needs.dependency-scan.result }}" == "failure" ]]; then
+            echo "::warning::Dependency scan found critical vulnerabilities"
+            CRITICAL_ISSUES=true
+          fi
+          
+          if [[ "${{ needs.secret-scan.result }}" == "failure" ]]; then
+            echo "::error::Secret scanning failed - potential secrets found!"
+            CRITICAL_ISSUES=true
+          fi
+          
+          if [ "$CRITICAL_ISSUES" = true ]; then
+            echo "::warning::Critical security issues detected. Please review and address before proceeding."
+            # Uncomment the line below to fail the job on critical issues
+            # exit 1
+          else
+            echo "✅ No critical security issues detected."
+          fi

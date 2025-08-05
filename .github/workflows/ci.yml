@@ -1,0 +1,335 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main, develop, 'feature/*' ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+# Set default permissions to read-only for security
+permissions:
+  contents: read
+  
+env:
+  # Python version to use (aligned with .python-version file)
+  PYTHON_VERSION: "3.12"
+  # Cache key version for dependency invalidation
+  CACHE_VERSION: "v1"
+
+jobs:
+  # Code quality and security checks
+  quality:
+    name: Code Quality & Security
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # Fetch full history for better analysis
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache UV dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/uv
+            .venv
+          key: ${{ runner.os }}-uv-${{ env.CACHE_VERSION }}-${{ hashFiles('**/pyproject.toml', '**/uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-${{ env.CACHE_VERSION }}-
+            ${{ runner.os }}-uv-
+
+      - name: Install UV
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: |
+          uv sync --dev
+
+      - name: Run linting (ruff)
+        run: |
+          uv run python -m ruff check src/ tests/ --output-format=github
+        continue-on-error: true
+
+      - name: Run code formatting check (ruff format)
+        run: |
+          uv run python -m ruff format --check src/ tests/
+
+      - name: Run type checking (mypy)
+        run: |
+          uv run python -m mypy src/microsoft_mcp --ignore-missing-imports
+        continue-on-error: true
+
+      - name: Security audit (pip-audit)
+        run: |
+          uv run python -m pip install pip-audit
+          uv run python -m pip-audit --format=json --output=security-audit.json
+          uv run python -m pip-audit
+        continue-on-error: true
+
+      - name: Upload security audit results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-audit-${{ github.run_id }}
+          path: security-audit.json
+          retention-days: 30
+
+  # Unit and integration tests
+  test:
+    name: Tests
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
+        python-version: [ "3.12", "3.13" ]
+        include:
+          # Add additional test configurations
+          - os: ubuntu-latest
+            python-version: "3.12"
+            coverage: true
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache UV dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/uv
+            .venv
+          key: ${{ runner.os }}-${{ matrix.python-version }}-uv-${{ env.CACHE_VERSION }}-${{ hashFiles('**/pyproject.toml', '**/uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.python-version }}-uv-${{ env.CACHE_VERSION }}-
+            ${{ runner.os }}-${{ matrix.python-version }}-uv-
+
+      - name: Install UV
+        shell: bash
+        run: |
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            curl -LsSf https://astral.sh/uv/install.sh | sh
+            echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+          else
+            curl -LsSf https://astral.sh/uv/install.sh | sh
+            echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+          fi
+
+      - name: Install dependencies
+        run: |
+          uv sync --dev
+
+      - name: Set test environment variables
+        shell: bash
+        run: |
+          # Set dummy environment variables for testing
+          echo "MICROSOFT_MCP_CLIENT_ID=test-client-id-${{ github.run_id }}" >> $GITHUB_ENV
+
+      - name: Run unit tests
+        run: |
+          uv run pytest tests/ -v --tb=short --strict-markers
+
+      - name: Run email framework tests
+        run: |
+          uv run pytest tests/email_framework/ -v --tb=short
+
+      - name: Run integration tests
+        run: |
+          uv run pytest tests/test_integration.py -v --tb=short
+        env:
+          # Integration tests might need special handling
+          SKIP_LIVE_TESTS: "true"
+
+      - name: Run coverage analysis
+        if: matrix.coverage
+        run: |
+          uv run pytest --cov=microsoft_mcp --cov-report=xml --cov-report=html --cov-report=term-missing tests/
+        env:
+          MICROSOFT_MCP_CLIENT_ID: test-client-id-${{ github.run_id }}
+
+      - name: Upload coverage to Codecov
+        if: matrix.coverage
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+
+      - name: Upload coverage artifacts
+        if: matrix.coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-${{ github.run_id }}
+          path: htmlcov/
+          retention-days: 30
+
+  # Email framework specific testing
+  email-framework-test:
+    name: Email Framework Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache UV dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/uv
+            .venv
+          key: ${{ runner.os }}-email-framework-${{ env.CACHE_VERSION }}-${{ hashFiles('**/pyproject.toml', '**/uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-email-framework-${{ env.CACHE_VERSION }}-
+            ${{ runner.os }}-email-framework-
+
+      - name: Install UV
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: |
+          uv sync --dev
+
+      - name: Run email framework test runner
+        run: |
+          uv run python -m microsoft_mcp.email_framework.test_runner
+        env:
+          MICROSOFT_MCP_CLIENT_ID: test-client-id-${{ github.run_id }}
+
+      - name: Upload email framework test outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: email-framework-outputs-${{ github.run_id }}
+          path: |
+            *.html
+            *.json
+          retention-days: 7
+
+  # Build and validation
+  build:
+    name: Build Package
+    runs-on: ubuntu-latest
+    needs: [quality, test]
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache UV dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/uv
+            .venv
+          key: ${{ runner.os }}-build-${{ env.CACHE_VERSION }}-${{ hashFiles('**/pyproject.toml', '**/uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.CACHE_VERSION }}-
+            ${{ runner.os }}-build-
+
+      - name: Install UV
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: |
+          uv sync --dev
+
+      - name: Build package
+        run: |
+          uv build
+
+      - name: Validate package
+        run: |
+          uv run python -m twine check dist/*
+
+      - name: Test package installation
+        run: |
+          # Test installation in clean environment
+          uv run --isolated pip install dist/*.whl
+          # Basic smoke test
+          MICROSOFT_MCP_CLIENT_ID=test-smoke-${{ github.run_id }} uv run --isolated python -c "import microsoft_mcp; print('Package import successful')"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package-${{ github.run_id }}
+          path: dist/
+          retention-days: 30
+
+  # Deployment readiness check (runs on main branch)
+  deployment-check:
+    name: Deployment Readiness
+    runs-on: ubuntu-latest
+    needs: [quality, test, build]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    timeout-minutes: 5
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check if version was bumped
+        id: version-check
+        run: |
+          # Extract version from pyproject.toml
+          CURRENT_VERSION=$(grep '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          echo "current-version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          
+          # Check if this version already has a git tag
+          if git tag --list | grep -q "^v$CURRENT_VERSION$"; then
+            echo "version-exists=true" >> $GITHUB_OUTPUT
+            echo "Version $CURRENT_VERSION already exists as a tag"
+          else
+            echo "version-exists=false" >> $GITHUB_OUTPUT
+            echo "Version $CURRENT_VERSION is new"
+          fi
+
+      - name: Deployment readiness summary
+        run: |
+          echo "## Deployment Readiness Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ steps.version-check.outputs.current-version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version exists**: ${{ steps.version-check.outputs.version-exists }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "${{ steps.version-check.outputs.version-exists }}" == "false" ]]; then
+            echo "✅ Ready for release - new version detected" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⏸️ Not ready for release - version already exists" >> $GITHUB_STEP_SUMMARY
+          fi

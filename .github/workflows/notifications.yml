@@ -1,0 +1,345 @@
+name: Notifications & Status Updates
+
+on:
+  workflow_run:
+    workflows: ["CI Pipeline", "Release Pipeline", "Security Scanning"]
+    types: [completed]
+  issues:
+    types: [opened, closed]
+  pull_request:
+    types: [opened, closed, merged]
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
+jobs:
+  # Workflow status notifications
+  workflow-status:
+    name: Workflow Status Notification
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_run'
+    timeout-minutes: 5
+    
+    steps:
+      - name: Get workflow status
+        id: workflow-status
+        run: |
+          WORKFLOW_NAME="${{ github.event.workflow_run.name }}"
+          WORKFLOW_CONCLUSION="${{ github.event.workflow_run.conclusion }}"
+          WORKFLOW_URL="${{ github.event.workflow_run.html_url }}"
+          BRANCH_NAME="${{ github.event.workflow_run.head_branch }}"
+          
+          echo "workflow-name=$WORKFLOW_NAME" >> $GITHUB_OUTPUT
+          echo "conclusion=$WORKFLOW_CONCLUSION" >> $GITHUB_OUTPUT
+          echo "url=$WORKFLOW_URL" >> $GITHUB_OUTPUT
+          echo "branch=$BRANCH_NAME" >> $GITHUB_OUTPUT
+          
+          # Determine emoji and status message
+          case "$WORKFLOW_CONCLUSION" in
+            "success")
+              echo "emoji=✅" >> $GITHUB_OUTPUT
+              echo "status=completed successfully" >> $GITHUB_OUTPUT
+              ;;
+            "failure")
+              echo "emoji=❌" >> $GITHUB_OUTPUT
+              echo "status=failed" >> $GITHUB_OUTPUT
+              ;;
+            "cancelled")
+              echo "emoji=⏹️" >> $GITHUB_OUTPUT
+              echo "status=was cancelled" >> $GITHUB_OUTPUT
+              ;;
+            *)
+              echo "emoji=⚠️" >> $GITHUB_OUTPUT
+              echo "status=completed with status: $WORKFLOW_CONCLUSION" >> $GITHUB_OUTPUT
+              ;;
+          esac
+
+      - name: Create workflow summary
+        run: |
+          echo "## ${{ steps.workflow-status.outputs.emoji }} Workflow Status Update" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Workflow**: ${{ steps.workflow-status.outputs.workflow-name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Status**: ${{ steps.workflow-status.outputs.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch**: ${{ steps.workflow-status.outputs.branch }}" >> $GITHUB_STEP_SUMMARY
+          echo "**URL**: [${{ steps.workflow-status.outputs.workflow-name }}](${{ steps.workflow-status.outputs.url }})" >> $GITHUB_STEP_SUMMARY
+          echo "**Time**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+
+      - name: Notify on critical failures
+        if: steps.workflow-status.outputs.conclusion == 'failure' && (steps.workflow-status.outputs.branch == 'main' || contains(steps.workflow-status.outputs.workflow-name, 'Security'))
+        run: |
+          echo "::error::Critical workflow failure detected!"
+          echo "Workflow: ${{ steps.workflow-status.outputs.workflow-name }}"
+          echo "Branch: ${{ steps.workflow-status.outputs.branch }}"
+          echo "URL: ${{ steps.workflow-status.outputs.url }}"
+          
+          # This could be extended to send notifications to Slack, Discord, email, etc.
+          # For example:
+          # curl -X POST -H 'Content-type: application/json' \
+          #   --data '{"text":"Critical workflow failure in microsoft-mcp!"}' \
+          #   ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # Pull request notifications
+  pr-notifications:
+    name: Pull Request Notifications
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    timeout-minutes: 5
+    
+    steps:
+      - name: PR status summary
+        run: |
+          PR_ACTION="${{ github.event.action }}"
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          PR_AUTHOR="${{ github.event.pull_request.user.login }}"
+          PR_URL="${{ github.event.pull_request.html_url }}"
+          
+          echo "## 🔄 Pull Request Update" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Action**: $PR_ACTION" >> $GITHUB_STEP_SUMMARY
+          echo "**PR**: #$PR_NUMBER - $PR_TITLE" >> $GITHUB_STEP_SUMMARY
+          echo "**Author**: @$PR_AUTHOR" >> $GITHUB_STEP_SUMMARY
+          echo "**URL**: [View PR]($PR_URL)" >> $GITHUB_STEP_SUMMARY
+          
+          case "$PR_ACTION" in
+            "opened")
+              echo "**Status**: 🆕 New pull request opened" >> $GITHUB_STEP_SUMMARY
+              ;;
+            "closed")
+              if [[ "${{ github.event.pull_request.merged }}" == "true" ]]; then
+                echo "**Status**: ✅ Pull request merged" >> $GITHUB_STEP_SUMMARY
+              else
+                echo "**Status**: ❌ Pull request closed without merging" >> $GITHUB_STEP_SUMMARY
+              fi
+              ;;
+            "merged")
+              echo "**Status**: 🎉 Pull request successfully merged" >> $GITHUB_STEP_SUMMARY
+              ;;
+          esac
+
+      - name: Generate PR statistics
+        if: github.event.action == 'closed' && github.event.pull_request.merged == true
+        run: |
+          # Calculate PR lifecycle metrics
+          CREATED_AT="${{ github.event.pull_request.created_at }}"
+          MERGED_AT="${{ github.event.pull_request.merged_at }}"
+          
+          # Convert to timestamps (simplified - would need proper date parsing in real implementation)
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### PR Metrics" >> $GITHUB_STEP_SUMMARY
+          echo "- **Created**: $CREATED_AT" >> $GITHUB_STEP_SUMMARY
+          echo "- **Merged**: $MERGED_AT" >> $GITHUB_STEP_SUMMARY
+          echo "- **Files changed**: ${{ github.event.pull_request.changed_files }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Additions**: +${{ github.event.pull_request.additions }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deletions**: -${{ github.event.pull_request.deletions }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Comments**: ${{ github.event.pull_request.comments }}" >> $GITHUB_STEP_SUMMARY
+
+  # Issue notifications
+  issue-notifications:
+    name: Issue Notifications
+    runs-on: ubuntu-latest
+    if: github.event_name == 'issues'
+    timeout-minutes: 5
+    
+    steps:
+      - name: Issue status summary
+        run: |
+          ISSUE_ACTION="${{ github.event.action }}"
+          ISSUE_NUMBER="${{ github.event.issue.number }}"
+          ISSUE_TITLE="${{ github.event.issue.title }}"
+          ISSUE_AUTHOR="${{ github.event.issue.user.login }}"
+          ISSUE_URL="${{ github.event.issue.html_url }}"
+          
+          echo "## 🐛 Issue Update" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Action**: $ISSUE_ACTION" >> $GITHUB_STEP_SUMMARY
+          echo "**Issue**: #$ISSUE_NUMBER - $ISSUE_TITLE" >> $GITHUB_STEP_SUMMARY
+          echo "**Author**: @$ISSUE_AUTHOR" >> $GITHUB_STEP_SUMMARY
+          echo "**URL**: [View Issue]($ISSUE_URL)" >> $GITHUB_STEP_SUMMARY
+          
+          case "$ISSUE_ACTION" in
+            "opened")
+              echo "**Status**: 🆕 New issue reported" >> $GITHUB_STEP_SUMMARY
+              ;;
+            "closed")
+              echo "**Status**: ✅ Issue resolved and closed" >> $GITHUB_STEP_SUMMARY
+              ;;
+          esac
+
+      - name: Auto-triage new issues
+        if: github.event.action == 'opened'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const { number: issue_number } = context.payload.issue;
+            const title = context.payload.issue.title.toLowerCase();
+            const body = context.payload.issue.body ? context.payload.issue.body.toLowerCase() : '';
+            
+            const labels = [];
+            
+            // Auto-label based on title and body content
+            if (title.includes('bug') || title.includes('error') || title.includes('fail')) {
+              labels.push('bug');
+            }
+            
+            if (title.includes('feature') || title.includes('enhancement') || body.includes('feature request')) {
+              labels.push('enhancement');
+            }
+            
+            if (title.includes('doc') || body.includes('documentation')) {
+              labels.push('documentation');
+            }
+            
+            if (title.includes('question') || title.includes('help')) {
+              labels.push('question');
+            }
+            
+            if (body.includes('email') || title.includes('email')) {
+              labels.push('email-framework');
+            }
+            
+            if (body.includes('auth') || title.includes('auth')) {
+              labels.push('authentication');
+            }
+            
+            if (body.includes('security') || title.includes('security')) {
+              labels.push('security');
+            }
+            
+            // Priority assessment
+            if (title.includes('critical') || title.includes('urgent') || body.includes('production')) {
+              labels.push('priority:high');
+            } else if (title.includes('minor') || body.includes('nice to have')) {
+              labels.push('priority:low');
+            } else {
+              labels.push('priority:medium');
+            }
+            
+            // Add needs-triage label for manual review
+            labels.push('needs-triage');
+            
+            if (labels.length > 0) {
+              await github.rest.issues.addLabels({
+                owner,
+                repo,
+                issue_number,
+                labels
+              });
+            }
+            
+            // Add initial response comment
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number,
+              body: `👋 Thanks for reporting this issue! 
+
+This issue has been automatically triaged and labeled. A maintainer will review it soon.
+
+**Automated labels applied**: ${labels.join(', ')}
+
+If this is a **security issue**, please do not post details publicly. Instead, please email the maintainers directly or use GitHub's private vulnerability reporting feature.
+
+**For faster resolution, please ensure you've provided**:
+- Clear steps to reproduce (for bugs)
+- Expected vs actual behavior
+- Your environment details (OS, Python version, etc.)
+- Relevant log output or error messages`
+            });
+
+  # Release notifications
+  release-notifications:
+    name: Release Notifications
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+    timeout-minutes: 5
+    
+    steps:
+      - name: Release announcement
+        run: |
+          RELEASE_TAG="${{ github.event.release.tag_name }}"
+          RELEASE_NAME="${{ github.event.release.name }}"
+          RELEASE_URL="${{ github.event.release.html_url }}"
+          IS_PRERELEASE="${{ github.event.release.prerelease }}"
+          
+          echo "## 🎉 New Release Published!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version**: $RELEASE_TAG" >> $GITHUB_STEP_SUMMARY
+          echo "**Name**: $RELEASE_NAME" >> $GITHUB_STEP_SUMMARY
+          echo "**Type**: $([[ \"$IS_PRERELEASE\" == \"true\" ]] && echo \"Pre-release\" || echo \"Stable release\")" >> $GITHUB_STEP_SUMMARY
+          echo "**URL**: [View Release]($RELEASE_URL)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "- 📦 Package will be available on PyPI shortly" >> $GITHUB_STEP_SUMMARY
+          echo "- 📖 Update documentation if needed" >> $GITHUB_STEP_SUMMARY
+          echo "- 📢 Consider announcing on social media/community channels" >> $GITHUB_STEP_SUMMARY
+          echo "- 🏷️ Update any dependent projects" >> $GITHUB_STEP_SUMMARY
+
+      - name: Generate release metrics
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Release Information" >> $GITHUB_STEP_SUMMARY
+          echo "- **Published by**: ${{ github.event.release.author.login }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Created**: ${{ github.event.release.created_at }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Published**: ${{ github.event.release.published_at }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Assets**: ${{ github.event.release.assets | length }} files" >> $GITHUB_STEP_SUMMARY
+          
+          # Note: In a real implementation, you might want to:
+          # - Send notifications to Slack/Discord
+          # - Update a changelog website
+          # - Trigger documentation updates
+          # - Send emails to subscribers
+          # - Post to social media
+          # - Update package registries
+
+  # Daily status summary
+  daily-status:
+    name: Daily Status Summary
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    timeout-minutes: 10
+    
+    steps:
+      - name: Generate daily summary
+        run: |
+          echo "## 📊 Daily Repository Status" >> $GITHUB_STEP_SUMMARY
+          echo "**Date**: $(date -u '+%Y-%m-%d')" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Get repository statistics using GitHub API
+          REPO_INFO=$(gh api repos/${{ github.repository }} --jq '{
+            stars: .stargazers_count,
+            forks: .forks_count,
+            open_issues: .open_issues_count,
+            language: .language,
+            updated: .updated_at
+          }')
+          
+          echo "### Repository Health" >> $GITHUB_STEP_SUMMARY
+          echo "- **⭐ Stars**: $(echo $REPO_INFO | jq -r '.stars')" >> $GITHUB_STEP_SUMMARY
+          echo "- **🍴 Forks**: $(echo $REPO_INFO | jq -r '.forks')" >> $GITHUB_STEP_SUMMARY
+          echo "- **🐛 Open Issues**: $(echo $REPO_INFO | jq -r '.open_issues')" >> $GITHUB_STEP_SUMMARY
+          echo "- **🔄 Last Updated**: $(echo $REPO_INFO | jq -r '.updated')" >> $GITHUB_STEP_SUMMARY
+          
+          # Get recent activity
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Recent Activity (Last 24h)" >> $GITHUB_STEP_SUMMARY
+          
+          # Recent commits
+          RECENT_COMMITS=$(gh api repos/${{ github.repository }}/commits --jq 'map(select(.commit.author.date > (now - 86400 | strftime("%Y-%m-%dT%H:%M:%SZ")))) | length')
+          echo "- **📝 Commits**: $RECENT_COMMITS" >> $GITHUB_STEP_SUMMARY
+          
+          # Recent PRs
+          RECENT_PRS=$(gh api repos/${{ github.repository }}/pulls --jq 'map(select(.created_at > (now - 86400 | strftime("%Y-%m-%dT%H:%M:%SZ")))) | length')
+          echo "- **🔄 New PRs**: $RECENT_PRS" >> $GITHUB_STEP_SUMMARY
+          
+          # Recent issues
+          RECENT_ISSUES=$(gh api repos/${{ github.repository }}/issues --jq 'map(select(.created_at > (now - 86400 | strftime("%Y-%m-%dT%H:%M:%SZ")))) | length')
+          echo "- **🐛 New Issues**: $RECENT_ISSUES" >> $GITHUB_STEP_SUMMARY
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
