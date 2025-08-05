@@ -26,4 +26,5 @@ dev = [
     "mcp>=1.9.3",
     "pytest>=8.4.0",
     "pytest-asyncio>=1.0.0",
+    "pytest-cov>=6.2.1",
 ]
