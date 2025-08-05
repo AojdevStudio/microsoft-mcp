@@ -13,6 +13,32 @@ dependencies = [
     "msal>=1.32.3",
     "python-dotenv>=1.1.0",
 ]
+keywords = [
+    "microsoft",
+    "graph",
+    "api",
+    "mcp",
+    "ai",
+    "assistant",
+    "outlook",
+    "calendar",
+    "onedrive",
+    "email",
+    "automation",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Communications :: Email",
+    "Topic :: Office/Business",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
+]
 
 [project.scripts]
 microsoft-mcp = "microsoft_mcp.server:main"
@@ -204,30 +230,3 @@ Issues = "https://github.com/elyxlz/microsoft-mcp/issues"
 Changelog = "https://github.com/elyxlz/microsoft-mcp/blob/main/CHANGELOG.md"
 Documentation = "https://github.com/elyxlz/microsoft-mcp#readme"
 
-keywords = [
-    "microsoft",
-    "graph",
-    "api",
-    "mcp",
-    "ai",
-    "assistant",
-    "outlook",
-    "calendar",
-    "onedrive",
-    "email",
-    "automation",
-]
-
-classifiers = [
-    "Development Status :: 4 - Beta",
-    "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
-    "Topic :: Communications :: Email",
-    "Topic :: Office/Business",
-    "Topic :: Software Development :: Libraries :: Python Modules",
-    "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
-]
