@@ -59,7 +59,7 @@ class AlertNotificationTemplate(EmailTemplate):
         html = f"""
         <div style="background-color: {urgency_style['bg_color']}; color: {urgency_style['text_color']}; padding: 20px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
             <h1 style="margin: 0; color: {urgency_style['text_color']};">
-                {urgency_style['icon']} {title}
+                {urgency_style['icon']} {self.escape_html(title)}
             </h1>
             <p style="margin: 10px 0 0 0; font-size: 18px; color: {urgency_style['text_color']};">
                 {urgency.upper()} ACTION REQUIRED
@@ -68,7 +68,7 @@ class AlertNotificationTemplate(EmailTemplate):
         
         <div class="section">
             <h2>Issue Details</h2>
-            <p style="font-size: 16px; line-height: 1.6;">{message}</p>
+            <p style="font-size: 16px; line-height: 1.6;">{self.escape_html(message)}</p>
         """
         
         # Add impact section if provided
@@ -76,7 +76,7 @@ class AlertNotificationTemplate(EmailTemplate):
             html += f"""
             <div class="alert alert-{alert_type}" style="margin: 20px 0;">
                 <strong>Business Impact:</strong><br>
-                {impact}
+                {self.escape_html(impact)}
             </div>
             """
         
@@ -90,7 +90,7 @@ class AlertNotificationTemplate(EmailTemplate):
                 <ol style="margin: 0; padding-left: 20px;">
             """
             for action in actions:
-                html += f'<li style="margin-bottom: 10px;">{action}</li>'
+                html += f'<li style="margin-bottom: 10px;">{self.escape_html(action)}</li>'
             html += """
                 </ol>
             </div>

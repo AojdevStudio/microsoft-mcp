@@ -37,10 +37,10 @@ class ProviderUpdateTemplate(EmailTemplate):
         html = f"""
         <div class="header">
             <h1>Performance Update</h1>
-            <p>Dear {provider_name}</p>
+            <p>Dear {self.escape_html(provider_name)}</p>
         </div>
         
-        <p>Here's your performance summary for {period}:</p>
+        <p>Here's your performance summary for {self.escape_html(period)}:</p>
         
         <div style="margin: 20px 0;">
             <div class="metric-card" style="margin-bottom: 15px;">
@@ -91,14 +91,14 @@ class ProviderUpdateTemplate(EmailTemplate):
         if highlights:
             html += '<div class="section"><h2>Your Highlights</h2><ul>'
             for highlight in highlights:
-                html += f'<li>{highlight}</li>'
+                html += f'<li>{self.escape_html(highlight)}</li>'
             html += '</ul></div>'
         
         # Add recommendations section
         if recommendations:
             html += '<div class="section"><h2>Recommendations for Growth</h2>'
             for i, rec in enumerate(recommendations, 1):
-                html += f'<div class="highlight">{i}. {rec}</div>'
+                html += f'<div class="highlight">{i}. {self.escape_html(rec)}</div>'
             html += '</div>'
         
         # Add motivational closing

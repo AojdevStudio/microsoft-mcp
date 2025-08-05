@@ -7,6 +7,7 @@ from abc import ABC, abstractmethod
 from typing import Dict, Any, List
 import re
 from datetime import datetime
+import html
 
 from ..css import (
     get_base_styles,
@@ -232,6 +233,12 @@ class EmailTemplate(ABC):
         
     # Utility methods for templates
     
+    def escape_html(self, text: str) -> str:
+        """Escape HTML special characters to prevent XSS attacks"""
+        if not isinstance(text, str):
+            text = str(text)
+        return html.escape(text, quote=True)
+    
     def format_currency(self, amount: float) -> str:
         """Format number as currency"""
         return f"${amount:,.0f}"
@@ -305,8 +312,8 @@ class EmailTemplate(ABC):
         """Build an alert HTML"""
         return f"""
 <div class="alert alert-{alert_type}">
-    <div class="alert-header">{title}</div>
-    <div class="alert-body">{message}</div>
+    <div class="alert-header">{self.escape_html(title)}</div>
+    <div class="alert-body">{self.escape_html(message)}</div>
 </div>"""
         
     def build_button(self, text: str, url: str, style: str = "primary", full_width: bool = False) -> str:

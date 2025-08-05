@@ -44,7 +44,7 @@ class ExecutiveSummaryTemplate(EmailTemplate):
         html = f"""
         <div class="header">
             <h1>Executive Summary</h1>
-            <p>{period}</p>
+            <p>{self.escape_html(period)}</p>
         </div>
         
         <div class="metric-card" style="margin-bottom: 30px;">
@@ -65,7 +65,7 @@ class ExecutiveSummaryTemplate(EmailTemplate):
             html += f"""
             <div style="display: inline-block; width: 48%; margin-right: {4 if i % 2 == 0 else 0}%; margin-bottom: 15px;">
                 <div class="metric-card">
-                    <div class="metric-label">{location['name']}</div>
+                    <div class="metric-label">{self.escape_html(location['name'])}</div>
                     <div class="metric-value status-{status}">
                         {self.format_currency(location['production'])}
                     </div>
@@ -85,7 +85,7 @@ class ExecutiveSummaryTemplate(EmailTemplate):
                 icon = "✓" if insight_type == "success" else "⚠️" if insight_type == "challenge" else "ℹ️"
                 html += f"""
                 <div class="highlight">
-                    <strong>{icon} {insight.get('location', 'Overall')}</strong>: {insight['message']}
+                    <strong>{icon} {self.escape_html(insight.get('location', 'Overall'))}</strong>: {self.escape_html(insight['message'])}
                 </div>
                 """
             html += '</div>'
@@ -120,7 +120,7 @@ class ExecutiveSummaryTemplate(EmailTemplate):
             
             html += f"""
             <tr>
-                <td><strong>{location['name']}</strong></td>
+                <td><strong>{self.escape_html(location['name'])}</strong></td>
                 <td>{self.format_currency(location['production'])}</td>
                 <td>{self.format_currency(goal)}</td>
                 <td class="status-{status}">{self.format_percentage(percentage)}</td>

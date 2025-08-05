@@ -71,8 +71,8 @@ class PracticeReportTemplate(EmailTemplate):
         """Build the header section"""
         return f"""
         <div class="header">
-            <h1 class="text-center">{location} Practice Report</h1>
-            <p class="text-center text-light">{period}</p>
+            <h1 class="text-center">{self.escape_html(location)} Practice Report</h1>
+            <p class="text-center text-light">{self.escape_html(period)}</p>
         </div>
         """
         
@@ -161,8 +161,8 @@ class PracticeReportTemplate(EmailTemplate):
             status_class = self.get_status_class(goal_percentage, 1.0)
             
             rows.append([
-                f"<strong>{name}</strong>",
-                role,
+                f"<strong>{self.escape_html(name)}</strong>",
+                self.escape_html(role),
                 self.format_currency(production),
                 f'<span class="{status_class}">{self.format_percentage(goal_percentage)}</span>'
             ])
@@ -217,12 +217,12 @@ class PracticeReportTemplate(EmailTemplate):
             priority_class = f"priority-{priority.lower()}"
             priority_badge = f'<span class="recommendation-priority {priority_class}">{priority.upper()}</span>'
             
-            outcome_html = f'<div class="text-sm text-light mt-2">{outcome}</div>' if outcome else ''
+            outcome_html = f'<div class="text-sm text-light mt-2">{self.escape_html(outcome)}</div>' if outcome else ''
             
             rec_items.append(f"""
             <div class="recommendation-item">
-                <div class="font-semibold">{title} {priority_badge}</div>
-                <div class="mt-1">{details}</div>
+                <div class="font-semibold">{self.escape_html(title)} {priority_badge}</div>
+                <div class="mt-1">{self.escape_html(details)}</div>
                 {outcome_html}
             </div>
             """)
