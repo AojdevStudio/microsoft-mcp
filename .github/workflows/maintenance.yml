@@ -1,0 +1,401 @@
+name: Maintenance & Updates
+
+on:
+  schedule:
+    # Run maintenance tasks weekly on Sundays at 3 AM UTC
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
+    inputs:
+      update-dependencies:
+        description: 'Update dependencies'
+        required: false
+        type: boolean
+        default: true
+      cleanup-caches:
+        description: 'Clean up old caches'
+        required: false
+        type: boolean
+        default: true
+      update-actions:
+        description: 'Update GitHub Actions'
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+env:
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  # Update dependencies
+  dependency-updates:
+    name: Update Dependencies
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event.inputs.update-dependencies == 'true'
+    timeout-minutes: 20
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install UV
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Backup current lock file
+        run: |
+          cp uv.lock uv.lock.backup || echo "No lock file to backup"
+
+      - name: Update dependencies
+        run: |
+          # Update all dependencies to latest compatible versions
+          uv sync --upgrade
+          
+          # Generate updated lock file
+          uv lock --upgrade
+
+      - name: Test with updated dependencies
+        run: |
+          # Install updated dependencies
+          uv sync --dev
+          
+          # Set dummy environment variable for tests
+          export MICROSOFT_MCP_CLIENT_ID=test-maintenance-${{ github.run_id }}
+          
+          # Run basic test suite to ensure compatibility
+          uv run pytest tests/ -x --tb=short || {
+            echo "Tests failed with updated dependencies, reverting..."
+            cp uv.lock.backup uv.lock 2>/dev/null || echo "No backup to restore"
+            exit 1
+          }
+
+      - name: Check for security vulnerabilities in updated deps
+        run: |
+          uv run python -m pip install pip-audit
+          uv run python -m pip-audit || {
+            echo "Security vulnerabilities found in updated dependencies"
+            exit 1
+          }
+
+      - name: Generate dependency update summary
+        id: dep-summary
+        run: |
+          echo "## Dependency Updates" > dependency-updates.md
+          echo "" >> dependency-updates.md
+          
+          # Check if there are any changes
+          if git diff --quiet uv.lock.backup uv.lock 2>/dev/null; then
+            echo "No dependency updates available." >> dependency-updates.md
+            echo "has-updates=false" >> $GITHUB_OUTPUT
+          else
+            echo "The following dependencies have been updated:" >> dependency-updates.md
+            echo "" >> dependency-updates.md
+            echo '```diff' >> dependency-updates.md
+            git diff uv.lock.backup uv.lock || echo "Lock file comparison not available" >> dependency-updates.md
+            echo '```' >> dependency-updates.md
+            echo "has-updates=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Pull Request for dependency updates
+        if: steps.dep-summary.outputs.has-updates == 'true'
+        run: |
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          
+          # Create branch
+          BRANCH_NAME="maintenance/dependency-updates-$(date +%Y%m%d)"
+          git checkout -b "$BRANCH_NAME"
+          
+          # Commit changes
+          git add uv.lock
+          git commit -m "🔧 Update dependencies
+
+          Automated dependency updates performed by maintenance workflow.
+          
+          - Updated all dependencies to latest compatible versions
+          - Verified compatibility with test suite
+          - Checked for security vulnerabilities
+          
+          🤖 Generated with [Claude Code](https://claude.ai/code)
+          
+          Co-Authored-By: Claude <noreply@anthropic.com>"
+          
+          # Push branch
+          git push origin "$BRANCH_NAME"
+          
+          # Create PR using GitHub CLI
+          gh pr create \
+            --title "🔧 Automated dependency updates" \
+            --body-file dependency-updates.md \
+            --base main \
+            --head "$BRANCH_NAME" \
+            --label "maintenance,dependencies,automation" \
+            --assignee "@me"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Update GitHub Actions
+  actions-updates:
+    name: Update GitHub Actions
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event.inputs.update-actions == 'true'
+    timeout-minutes: 15
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update GitHub Actions versions
+        id: update-actions
+        run: |
+          echo "## GitHub Actions Updates" > actions-updates.md
+          echo "" >> actions-updates.md
+          
+          # List of actions to update (action-name:current-major-version)
+          ACTIONS_TO_UPDATE=(
+            "actions/checkout:v4"
+            "actions/setup-python:v5"
+            "actions/cache:v4"
+            "actions/upload-artifact:v4"
+            "actions/download-artifact:v4"
+            "codecov/codecov-action:v4"
+            "github/codeql-action/init:v3"
+            "github/codeql-action/analyze:v3"
+            "github/codeql-action/upload-sarif:v3"
+            "softprops/action-gh-release:v2"
+            "pypa/gh-action-pypi-publish:release/v1"
+          )
+          
+          HAS_UPDATES=false
+          
+          for action_spec in "${ACTIONS_TO_UPDATE[@]}"; do
+            IFS=':' read -ra PARTS <<< "$action_spec"
+            ACTION_NAME="${PARTS[0]}"
+            TARGET_VERSION="${PARTS[1]}"
+            
+            echo "Checking for updates to $ACTION_NAME..."
+            
+            # Find all uses of this action in workflow files
+            WORKFLOW_FILES=$(find .github/workflows -name "*.yml" -o -name "*.yaml")
+            
+            for file in $WORKFLOW_FILES; do
+              # Update action versions in workflow files
+              if grep -q "uses: $ACTION_NAME@" "$file"; then
+                # Get current version
+                CURRENT_VERSION=$(grep "uses: $ACTION_NAME@" "$file" | head -1 | sed "s/.*@//")
+                
+                if [[ "$CURRENT_VERSION" != "$TARGET_VERSION" ]]; then
+                  echo "Updating $ACTION_NAME from $CURRENT_VERSION to $TARGET_VERSION in $file"
+                  sed -i "s|uses: $ACTION_NAME@.*|uses: $ACTION_NAME@$TARGET_VERSION|g" "$file"
+                  echo "- Updated $ACTION_NAME from $CURRENT_VERSION to $TARGET_VERSION in $file" >> actions-updates.md
+                  HAS_UPDATES=true
+                fi
+              fi
+            done
+          done
+          
+          if [[ "$HAS_UPDATES" == "false" ]]; then
+            echo "No GitHub Actions updates available." >> actions-updates.md
+            echo "has-updates=false" >> $GITHUB_OUTPUT
+          else
+            echo "has-updates=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Pull Request for actions updates
+        if: steps.update-actions.outputs.has-updates == 'true'
+        run: |
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          
+          # Create branch
+          BRANCH_NAME="maintenance/actions-updates-$(date +%Y%m%d)"
+          git checkout -b "$BRANCH_NAME"
+          
+          # Commit changes
+          git add .github/workflows/
+          git commit -m "🔧 Update GitHub Actions versions
+
+          Automated GitHub Actions version updates performed by maintenance workflow.
+          
+          🤖 Generated with [Claude Code](https://claude.ai/code)
+          
+          Co-Authored-By: Claude <noreply@anthropic.com>"
+          
+          # Push branch
+          git push origin "$BRANCH_NAME"
+          
+          # Create PR using GitHub CLI
+          gh pr create \
+            --title "🔧 Update GitHub Actions versions" \
+            --body-file actions-updates.md \
+            --base main \
+            --head "$BRANCH_NAME" \
+            --label "maintenance,github-actions,automation"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Cache cleanup
+  cache-cleanup:
+    name: Cache Cleanup
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event.inputs.cleanup-caches == 'true'
+    timeout-minutes: 10
+    
+    steps:
+      - name: Cleanup old caches
+        run: |
+          echo "## Cache Cleanup Summary" > cache-cleanup.md
+          echo "" >> cache-cleanup.md
+          
+          # Get list of caches
+          CACHES=$(gh api repos/${{ github.repository }}/actions/caches --paginate --jq '.actions_caches[].key' || echo "")
+          
+          if [[ -z "$CACHES" ]]; then
+            echo "No caches found to clean up." >> cache-cleanup.md
+          else
+            echo "Found $(echo "$CACHES" | wc -l) cache entries." >> cache-cleanup.md
+            echo "" >> cache-cleanup.md
+            
+            # Delete caches older than 7 days (GitHub automatically handles this, but we can be more aggressive)
+            OLD_CACHES=$(gh api repos/${{ github.repository }}/actions/caches --paginate \
+              --jq '.actions_caches[] | select(.created_at < (now - 604800)) | .id' || echo "")
+            
+            if [[ -n "$OLD_CACHES" ]]; then
+              echo "Deleting $(echo "$OLD_CACHES" | wc -l) old cache entries..." >> cache-cleanup.md
+              
+              for cache_id in $OLD_CACHES; do
+                gh api --method DELETE repos/${{ github.repository }}/actions/caches/$cache_id || echo "Failed to delete cache $cache_id" >> cache-cleanup.md
+              done
+            else
+              echo "No old caches found to delete." >> cache-cleanup.md
+            fi
+          fi
+          
+          echo "" >> cache-cleanup.md
+          echo "Cache cleanup completed at $(date)" >> cache-cleanup.md
+          
+          # Display summary
+          cat cache-cleanup.md >> $GITHUB_STEP_SUMMARY
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Repository health check
+  health-check:
+    name: Repository Health Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install UV
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Repository health assessment
+        run: |
+          echo "## 🏥 Repository Health Check" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Check Python version compatibility
+          echo "### Python Version Compatibility" >> $GITHUB_STEP_SUMMARY
+          PYTHON_VERSION_IN_FILE=$(cat .python-version)
+          PYTHON_VERSION_IN_PYPROJECT=$(grep 'requires-python' pyproject.toml | sed 's/.*>=\([0-9.]*\).*/\1/')
+          
+          echo "- **.python-version**: $PYTHON_VERSION_IN_FILE" >> $GITHUB_STEP_SUMMARY
+          echo "- **pyproject.toml requires-python**: >=$PYTHON_VERSION_IN_PYPROJECT" >> $GITHUB_STEP_SUMMARY
+          
+          # Check for common issues
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Common Issues Check" >> $GITHUB_STEP_SUMMARY
+          
+          # Check for TODO/FIXME comments
+          TODO_COUNT=$(grep -r "TODO\|FIXME" src/ --exclude-dir=__pycache__ | wc -l || echo "0")
+          echo "- **TODO/FIXME comments**: $TODO_COUNT found" >> $GITHUB_STEP_SUMMARY
+          
+          # Check for print statements (should use logging)
+          PRINT_COUNT=$(grep -r "print(" src/ --exclude-dir=__pycache__ | wc -l || echo "0")
+          echo "- **Print statements**: $PRINT_COUNT found (consider using logging)" >> $GITHUB_STEP_SUMMARY
+          
+          # Check for large files
+          LARGE_FILES=$(find . -type f -size +1M ! -path "./.git/*" ! -path "./.*" | wc -l || echo "0")
+          echo "- **Large files (>1MB)**: $LARGE_FILES found" >> $GITHUB_STEP_SUMMARY
+          
+          # Check branch protection
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Repository Configuration" >> $GITHUB_STEP_SUMMARY
+          
+          BRANCH_PROTECTION=$(gh api repos/${{ github.repository }}/branches/main/protection --jq '.required_status_checks.strict' 2>/dev/null || echo "Not set")
+          echo "- **Branch protection**: $BRANCH_PROTECTION" >> $GITHUB_STEP_SUMMARY
+          
+          # Check workflow file validity
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Workflow Files Status" >> $GITHUB_STEP_SUMMARY
+          
+          WORKFLOW_FILES=$(find .github/workflows -name "*.yml" -o -name "*.yaml" | wc -l)
+          echo "- **Workflow files**: $WORKFLOW_FILES found" >> $GITHUB_STEP_SUMMARY
+          
+          # Basic syntax check for workflow files
+          for workflow in .github/workflows/*.yml; do
+            if [[ -f "$workflow" ]]; then
+              python -c "import yaml; yaml.safe_load(open('$workflow'))" 2>/dev/null && \
+                echo "  - ✅ $(basename $workflow)" >> $GITHUB_STEP_SUMMARY || \
+                echo "  - ❌ $(basename $workflow) - YAML syntax error" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+          
+          # Check dependency freshness
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Dependency Status" >> $GITHUB_STEP_SUMMARY
+          
+          uv sync --dev
+          
+          # Count total dependencies
+          TOTAL_DEPS=$(uv pip list --format=json | python -c "import sys, json; print(len(json.load(sys.stdin)))")
+          echo "- **Total dependencies**: $TOTAL_DEPS" >> $GITHUB_STEP_SUMMARY
+          
+          # Check for outdated dependencies
+          OUTDATED=$(uv pip list --outdated --format=json | python -c "import sys, json; print(len(json.load(sys.stdin)))" 2>/dev/null || echo "0")
+          echo "- **Outdated dependencies**: $OUTDATED" >> $GITHUB_STEP_SUMMARY
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate maintenance recommendations
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔧 Maintenance Recommendations" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Generate recommendations based on findings
+          echo "1. **Regular Updates**: Keep dependencies and GitHub Actions up to date" >> $GITHUB_STEP_SUMMARY
+          echo "2. **Security Monitoring**: Review security scan results regularly" >> $GITHUB_STEP_SUMMARY
+          echo "3. **Code Quality**: Address TODO/FIXME comments and replace print statements with logging" >> $GITHUB_STEP_SUMMARY
+          echo "4. **Documentation**: Keep README and documentation current with latest features" >> $GITHUB_STEP_SUMMARY
+          echo "5. **Testing**: Maintain good test coverage and add tests for new functionality" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Next maintenance run**: $(date -d '+7 days' '+%Y-%m-%d')" >> $GITHUB_STEP_SUMMARY
