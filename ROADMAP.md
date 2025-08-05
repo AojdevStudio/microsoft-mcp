@@ -501,20 +501,116 @@ def generate_practice_email_content(financial_data: dict) -> str:
 
 ---
 
+## 🔄 API Consolidation Roadmap (2025)
+
+### Executive Summary
+
+The Microsoft MCP server has grown to **61 API tools** with significant redundancy. This consolidation initiative will reduce the API surface to **46 optimized tools** (25% reduction) while improving maintainability and developer experience.
+
+### Q1 2025: Foundation & Unified Search
+**Theme**: "Establish Patterns & Search Unification"
+
+#### Deliverables
+- **Unified Search API**: Single `search()` tool replacing 5 separate search implementations
+- **Migration Framework**: Automated migration utilities and documentation
+- **Foundation Standards**: Standardized parameters, error handling, pagination
+
+#### Technical Specification
+```python
+@mcp.tool
+def search(
+    account_id: str,
+    query: str,
+    types: list[str] = ["message", "event", "driveItem", "contact"],
+    folder: str | None = None,
+    date_range: dict | None = None,
+    has_attachments: bool | None = None,
+    file_type: str | None = None,
+    limit: int = 20
+) -> dict[str, list[dict]]
+```
+
+### Q2 2025: Email Operations Consolidation
+**Theme**: "Streamline Communication APIs"
+
+#### Deliverables
+- **Template Removal**: Eliminate 4 business-specific email templates
+- **Generic Template System**: Parameter-driven template engine
+- **Email Consolidation**: Merge reply operations and attachment handling
+
+#### Technical Specification
+```python
+@mcp.tool
+def send_email(
+    account_id: str,
+    to: str,
+    subject: str,
+    body: str,
+    # Enhanced parameters
+    template_name: str | None = None,
+    template_data: dict[str, Any] | None = None,
+    reply_to_id: str | None = None,
+    forward_from_id: str | None = None,
+    save_as_draft: bool = False,
+    cc: list[str] | None = None,
+    bcc: list[str] | None = None,
+    attachments: list[str] | None = None
+) -> dict[str, str]
+```
+
+### Q3 2025: File & Attachment Unification
+**Theme**: "Streamline Content Management"
+
+#### Deliverables
+- **Unified File Management**: Consolidate file operations from 12 to 8 tools
+- **Intelligent Caching**: Enhanced performance for frequently accessed files
+- **Large File Support**: Chunked operations for files >10MB
+
+### Q4 2025: Migration & Optimization
+**Theme**: "Complete Transition & Performance Excellence"
+
+#### Deliverables
+- **Complete Migration**: 90% user adoption target
+- **Performance Excellence**: System-wide optimization
+- **Legacy Deprecation**: 90-day notice periods
+
+### Success Metrics
+- **API Count**: 61 → 46 tools (25% reduction)
+- **Performance**: ≤5% regression during transition
+- **Adoption**: 90% migration within 6 months
+- **Maintenance**: 30% reduction in support overhead
+
+### Investment & ROI
+- **Budget**: ~$2,400 (AI agent costs: $200/month × 12 months)
+- **Additional Costs**: 
+  - Microsoft 365 test tenant: ~$20/month × 12 = $240
+  - Cloud infrastructure (if needed): ~$100/month × 12 = $1,200
+  - **Total**: ~$3,840 for entire consolidation
+- **Expected ROI**: 30% maintenance reduction, 25% API surface reduction
+- **Resources**: 1 AI agent (Claude) + 1 human supervisor (part-time oversight)
+
+---
+
 ## 📝 Next Steps
 
-### Week 1 Action Items
+### Immediate Actions (Email Framework)
 1. [ ] Create `src/microsoft_mcp/email_framework/` directory structure
 2. [ ] Extract CSS from `visual-mocks.html` into framework files  
 3. [ ] Implement basic component generators (metrics, alerts, providers)
 4. [ ] Create simple template system
 5. [ ] Update one email function to use new framework as proof of concept
 
-### Dependencies & Considerations
-- **CSS Email Compatibility**: Ensure framework works across email clients
-- **File Size**: Keep CSS framework lightweight for email delivery
-- **Maintenance**: Plan for easy updates and theme modifications
-- **Testing**: Comprehensive testing across email clients and devices
-- **Documentation**: Clear component usage examples and theme guides
+### API Consolidation Planning
+1. [ ] Review and approve consolidation roadmap
+2. [ ] Allocate resources for Q1 2025 start
+3. [ ] Begin stakeholder communication
+4. [ ] Set up development infrastructure
+5. [ ] Initiate unified search design sessions
 
-This roadmap provides a clear path to transform your MCP server into a professional email framework that will produce consistently beautiful, branded reports for KamDental! 🚀
+### Dependencies & Considerations
+- **Email Framework**: CSS compatibility, file size, maintenance, testing
+- **API Consolidation**: Backward compatibility, performance targets, user migration
+- **Resource Planning**: Team formation, budget approval, infrastructure setup
+- **Risk Management**: User adoption strategies, performance monitoring
+
+This roadmap provides clear paths for both the email framework enhancement and comprehensive API consolidation! 🚀

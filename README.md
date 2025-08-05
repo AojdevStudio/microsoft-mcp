@@ -5,6 +5,7 @@ Powerful MCP server for Microsoft Graph API - a complete AI assistant toolkit fo
 ## Features
 
 - **Email Management**: Read, send, reply, manage attachments, organize folders
+- **Professional Email Templates**: KamDental-branded templates with automatic theme selection
 - **Calendar Intelligence**: Create, update, check availability, respond to invitations
 - **OneDrive Files**: Upload, download, browse with pagination
 - **Contacts**: Search and list contacts from your address book
@@ -28,6 +29,12 @@ claude
 > read my latest emails with full content
 > reply to the email from John saying "I'll review this today"
 > send an email with attachment to alice@example.com
+
+# Professional email templates
+> send a practice report for Baytown location with this month's financial data
+> send an executive summary across all locations
+> send a provider performance update for Dr. Johnson
+> send an alert notification about system downtime
 
 # Calendar examples  
 > show my calendar for next week
@@ -58,6 +65,19 @@ claude
 - **`delete_email`** - Delete emails
 - **`get_attachment`** - Get email attachment content
 - **`search_emails`** - Search emails by query
+
+### Professional Email Templates
+- **`send_practice_report`** - Send branded practice performance report
+- **`send_executive_summary`** - Send multi-location executive overview
+- **`send_provider_update`** - Send provider performance update
+- **`send_alert_notification`** - Send urgent alerts and notifications
+
+#### Email Template Features
+- **Automatic Theme Selection**: Baytown (blue), Humble (green), or Executive (dark) based on location/recipient
+- **Mobile Responsive**: Optimized for all devices and email clients
+- **Professional Design**: Consistent branding with KamDental visual identity
+- **Performance Optimized**: <2 second rendering, <100KB total size
+- **Accessibility**: WCAG 2.1 AA compliant with screen reader support
 
 ### Calendar Tools
 - **`list_events`** - List calendar events with details
@@ -180,6 +200,71 @@ list_emails(account_id, limit=10, include_body=True)
 create_event(account_id, "Meeting", "2024-01-15T10:00:00Z", "2024-01-15T11:00:00Z")
 ```
 
+## Professional Email Templates
+
+The KamDental Email Framework provides professional, branded email templates:
+
+### Practice Report Example
+```python
+await send_practice_report(
+    account_id="default",
+    to="manager@kamdental.com",
+    subject="Baytown Practice Report - January 2024",
+    location="Baytown",
+    financial_data={
+        "production": {"value": 285000, "goal": 300000},
+        "collections": {"value": 270000, "ratio": 0.947},
+        "case_acceptance": {"value": 0.72, "goal": 0.75},
+        "call_answer_rate": {"value": 0.91, "goal": 0.95}
+    },
+    provider_data=[
+        {
+            "name": "Dr. Sarah Johnson",
+            "role": "General Dentist",
+            "production": 125000,
+            "goal_percentage": 1.04
+        }
+    ],
+    period="January 2024",
+    alerts=[
+        {
+            "type": "warning",
+            "title": "Production Below Target",
+            "message": "Current production is 5% below monthly target."
+        }
+    ]
+)
+```
+
+### Executive Summary Example
+```python
+await send_executive_summary(
+    account_id="default",
+    to="executive@kamdental.com",
+    locations_data=[
+        {
+            "name": "Baytown",
+            "production": 285000,
+            "target": 300000,
+            "status": "warning"
+        },
+        {
+            "name": "Humble",
+            "production": 195000,
+            "target": 180000,
+            "status": "ahead"
+        }
+    ],
+    period="Q1 2024",
+    key_insights=[
+        {
+            "title": "Overall Performance",
+            "description": "Combined production at 96% of target"
+        }
+    ]
+)
+```
+
 ## Development
 
 ```bash
@@ -194,6 +279,9 @@ uvx ruff format .
 
 # Lint
 uvx ruff check --fix --unsafe-fixes .
+
+# Test email framework
+uv run python -m microsoft_mcp.email_framework.test_runner
 ```
 
 ## Example: AI Assistant Scenarios
@@ -250,6 +338,12 @@ create_event(
 - **"Need admin approval"**: Use `MICROSOFT_MCP_TENANT_ID=consumers` for personal accounts
 - **Missing permissions**: Ensure all required API permissions are granted in Azure
 - **Token errors**: Delete `~/.microsoft_mcp_token_cache.json` and re-authenticate
+
+## Documentation
+
+- [Email Framework Guide](docs/email-framework-guide.md) - Comprehensive guide to professional email templates
+- [API Documentation](docs/api.md) - Detailed API reference
+- [Examples](examples/) - Code examples and use cases
 
 ## License
 
