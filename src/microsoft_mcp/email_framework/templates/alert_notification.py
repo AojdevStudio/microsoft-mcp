@@ -105,11 +105,11 @@ class AlertNotificationTemplate(EmailTemplate):
             cta_color = urgency_style['bg_color']
         else:
             cta_text = "Please review this information and take appropriate action."
-            cta_color = self._theme_colors['--primary']
+            cta_color = self._theme_colors.get('primary', '#007bff')  # Fixed: use 'primary' not '--primary'
         
         html += f"""
         <div style="text-align: center; margin: 30px 0;">
-            <div style="background-color: {self._theme_colors['--light-bg']}; padding: 20px; border-radius: 8px; border: 2px solid {cta_color};">
+            <div style="background-color: {self._theme_colors.get('light_bg', '#f8f9fa')}; padding: 20px; border-radius: 8px; border: 2px solid {cta_color};">
                 <p style="margin: 0; font-weight: 600; color: {cta_color};">
                     {cta_text}
                 </p>

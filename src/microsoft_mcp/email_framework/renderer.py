@@ -272,3 +272,18 @@ def preview_email_template(
 ) -> str:
     """Preview an email template with sample data"""
     return _default_renderer.preview_template(template_name, theme)
+
+def calculate_email_size(html: str) -> Dict[str, Any]:
+    """Calculate email size statistics"""
+    size_bytes = len(html.encode('utf-8'))
+    size_kb = round(size_bytes / 1024, 2)
+    
+    # Estimate based on typical email delivery constraints
+    # Most email clients have a 102KB limit
+    return {
+        "size_bytes": size_bytes,
+        "size_kb": size_kb,
+        "size_mb": round(size_kb / 1024, 4),
+        "within_limits": size_bytes < 102400,  # 100KB limit
+        "estimated_load_time_ms": round(size_bytes / 50),  # Rough estimate
+    }

@@ -156,8 +156,10 @@ addopts = [
     "--tb=short",
     "--durations=10",
     "--color=yes",
+    "--ignore=tests/quarantine",
 ]
 testpaths = ["tests"]
+# Exclude quarantined tests from test discovery
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]

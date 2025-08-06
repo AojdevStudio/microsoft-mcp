@@ -184,3 +184,29 @@ def remove_unused_css(html: str, css: str) -> str:
 def get_css_size(css: str) -> int:
     """Get the size of CSS in bytes"""
     return len(css.encode('utf-8'))
+
+def optimize_css_size(css: str, max_size: int = 50000) -> str:
+    """Optimize CSS to fit within size limits"""
+    # First try to minify
+    minified = minify_css(css)
+    
+    if len(minified.encode('utf-8')) <= max_size:
+        return minified
+    
+    # If still too large, remove non-essential properties
+    # This is a simple implementation - can be made more sophisticated
+    lines = minified.split('\n')
+    essential_lines = []
+    
+    for line in lines:
+        # Keep critical styling
+        if any(prop in line.lower() for prop in ['color:', 'background:', 'font-size:', 'display:', 'width:', 'height:']):
+            essential_lines.append(line)
+    
+    optimized = '\n'.join(essential_lines)
+    
+    # If still too large, truncate
+    if len(optimized.encode('utf-8')) > max_size:
+        optimized = optimized[:max_size]
+    
+    return optimized

@@ -8,6 +8,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+
+## [0.2.0] - 2025-08-05
+
+### Added
+
+- 🚀 feat: implement comprehensive GitHub Actions CI/CD pipeline
+- 🔧 feat: add changelog generation utilities and development scripts
+- 📖 docs: add user story 1.1 for parameter validation framework
+- 📋 docs: add project brief and email consolidation PRD
+- 📚 docs: add comprehensive architecture documentation
+- ⚙️ config: add CodeRabbit configuration for code-focused reviews
+- implement parameter models and validation framework for email operations [MSFT-701-1.1]
+- ✨ feat: introduce foundational documentation and task framework
+- Add KamDental Professional Email Framework with Templates and Themes (#4) [#4]
+- 🔧 feat(hooks): add post-tool use hook for workflow completion
+- ✨ feat(mcp): enhance Microsoft Graph API integration
+- 🏗️ feat(claude): add comprehensive agent infrastructure
+- 🚀 feat(claude): major command framework enhancement
+- ⚡ feat(hooks): enhance code quality and notification systems
+- 📋 docs: add KamDental Email Framework PRD with comprehensive testing requirements
+- 📄 chore: add .env.example template for environment configuration
+
+### Changed
+
+- ⚙️ config: update Claude settings and gitignore rules
+- 🙈 chore: update .gitignore with project-specific ignores
+
+### Removed
+
+- 🗑️ chore: remove obsolete hook files
+
+### Fixed
+
+- 🔧 fix: correct pyproject.toml structure - move keywords and classifiers to project section
+- 🧹 style: fix linting errors in Claude hooks
+- 🐛 fix: force HTML formatting for all email functions to ensure professional styling
+
 ## [0.2.0] - 2025-08-04
 
 ### Added
@@ -85,5 +122,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🔒 OAuth2 device flow authentication
 
 [Unreleased]: https://github.com/org/repo/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/org/repo/releases/tag/v0.2.0
 [0.2.0]: https://github.com/org/repo/releases/tag/v0.2.0
 [0.1.0]: https://github.com/AojdevStudio/microsoft-mcp/releases/tag/v0.1.0

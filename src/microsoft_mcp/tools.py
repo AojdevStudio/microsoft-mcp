@@ -2880,3 +2880,56 @@ def send_alert_notification(
         cc=cc,
         bcc=bcc
     )
+
+# ============================================================================
+# FUNCTION ALIASES AND COMPATIBILITY FUNCTIONS
+# ============================================================================
+# These aliases provide backward compatibility and alternative naming for tools
+
+# Calendar function aliases - tests expect these shorter names
+list_events = list_calendar_events
+create_event = create_calendar_event
+update_event = update_calendar_event  
+delete_event = delete_calendar_event
+
+# Contact function aliases - already correct names, but keeping for consistency
+# list_contacts = list_contacts  # Already correct name
+# create_contact = create_contact  # Already correct name
+
+# Email validation utility function for tests
+def _validate_email_address(email: str) -> bool:
+    """Validate email address format - utility function used by tests"""
+    import re
+    if not email or not isinstance(email, str):
+        return False
+    
+    # Simple email validation pattern
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return bool(re.match(pattern, email.strip()))
+
+
+# Email validation function using the validators module
+def validate_email(email: str) -> str:
+    """Validate email using the email framework validators"""
+    from .email_framework.validators import EmailValidator
+    return EmailValidator.validate_email(email)
+
+
+# Email recipient list validation
+def validate_recipient_list(recipients: list[str]) -> list[str]:
+    """Validate a list of email recipients"""
+    from .email_framework.validators import EmailValidator
+    return EmailValidator.validate_email_list(recipients)
+
+
+# HTML structure utility for email styling tests
+def ensure_html_structure(content: str) -> str:
+    """Ensure HTML content has proper structure for email templates"""
+    if not content:
+        return '<html><body></body></html>'
+    
+    # If content doesn't have html tags, wrap it
+    if not content.strip().startswith('<html'):
+        content = f'<html><body>{content}</body></html>'
+    
+    return content
