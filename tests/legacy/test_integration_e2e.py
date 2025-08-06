@@ -13,14 +13,20 @@ To run these tests:
 These tests will be skipped in CI unless explicitly enabled.
 """
 
-import os
-import asyncio
 import json
-from datetime import datetime, timedelta, timezone
+import os
+from datetime import UTC
+from datetime import datetime
+from datetime import timedelta
+
 import pytest
-from mcp import ClientSession, StdioServerParameters
-from mcp.client.stdio import stdio_client
+
+pytestmark = pytest.mark.legacy  # Mark all tests in this file as legacy
+
 from dotenv import load_dotenv
+from mcp import ClientSession
+from mcp import StdioServerParameters
+from mcp.client.stdio import stdio_client
 
 load_dotenv()
 
@@ -45,7 +51,7 @@ def parse_result(result, tool_name=None):
         list_tools = {
             "list_accounts",
             "list_emails",
-            "list_events", 
+            "list_events",
             "list_contacts",
             "list_files",
         }
@@ -104,7 +110,7 @@ async def test_e2e_email_operations():
     """E2E test for email operations"""
     async for session in get_session():
         account_info = await get_account_info(session)
-        
+
         # Test list emails
         result = await session.call_tool(
             "list_emails",
@@ -117,12 +123,12 @@ async def test_e2e_email_operations():
         assert not result.isError
         emails = parse_result(result, "list_emails")
         assert emails is not None
-        
+
         if len(emails) > 0:
             assert "id" in emails[0]
             assert "subject" in emails[0]
             assert "body" in emails[0]
-            
+
             # Test get specific email
             email_id = emails[0].get("id")
             get_result = await session.call_tool(
@@ -141,7 +147,7 @@ async def test_e2e_calendar_operations():
     """E2E test for calendar operations"""
     async for session in get_session():
         account_info = await get_account_info(session)
-        
+
         # Test list events
         result = await session.call_tool(
             "list_events",
@@ -154,11 +160,11 @@ async def test_e2e_calendar_operations():
         assert not result.isError
         events = parse_result(result, "list_events")
         assert events is not None
-        
+
         # Test create and delete event
-        start_time = datetime.now(timezone.utc) + timedelta(days=7)
+        start_time = datetime.now(UTC) + timedelta(days=7)
         end_time = start_time + timedelta(hours=1)
-        
+
         create_result = await session.call_tool(
             "create_event",
             {
@@ -174,7 +180,7 @@ async def test_e2e_calendar_operations():
         event_data = parse_result(create_result)
         assert event_data is not None
         assert "id" in event_data
-        
+
         # Clean up - delete the test event
         event_id = event_data.get("id")
         delete_result = await session.call_tool(
@@ -194,7 +200,7 @@ async def test_e2e_contact_operations():
     """E2E test for contact operations"""
     async for session in get_session():
         account_info = await get_account_info(session)
-        
+
         # Test list contacts
         result = await session.call_tool(
             "list_contacts", {"account_id": account_info["account_id"], "limit": 10}
@@ -202,7 +208,7 @@ async def test_e2e_contact_operations():
         assert not result.isError
         contacts = parse_result(result, "list_contacts")
         assert contacts is not None
-        
+
         # Test create and delete contact
         create_result = await session.call_tool(
             "create_contact",
@@ -217,7 +223,7 @@ async def test_e2e_contact_operations():
         new_contact = parse_result(create_result)
         assert new_contact is not None
         assert "id" in new_contact
-        
+
         # Clean up - delete the test contact
         contact_id = new_contact.get("id")
         delete_result = await session.call_tool(
@@ -233,7 +239,7 @@ async def test_e2e_file_operations():
     """E2E test for file operations"""
     async for session in get_session():
         account_info = await get_account_info(session)
-        
+
         # Test list files
         result = await session.call_tool(
             "list_files", {"account_id": account_info["account_id"]}
@@ -241,7 +247,7 @@ async def test_e2e_file_operations():
         assert not result.isError
         files = parse_result(result)
         assert files is not None
-        
+
         # Test search files
         search_result = await session.call_tool(
             "search_files",
@@ -258,7 +264,7 @@ async def test_e2e_search_operations():
     """E2E test for search operations"""
     async for session in get_session():
         account_info = await get_account_info(session)
-        
+
         # Test unified search
         result = await session.call_tool(
             "unified_search",
@@ -273,7 +279,7 @@ async def test_e2e_search_operations():
         search_results = parse_result(result)
         assert search_results is not None
         assert isinstance(search_results, dict)
-        
+
         # Test email search
         email_search_result = await session.call_tool(
             "search_emails",
@@ -291,7 +297,7 @@ async def test_e2e_email_draft_workflow():
     """E2E test for complete email draft workflow"""
     async for session in get_session():
         account_info = await get_account_info(session)
-        
+
         # Create draft
         draft_result = await session.call_tool(
             "create_email_draft",
@@ -306,9 +312,9 @@ async def test_e2e_email_draft_workflow():
         draft_data = parse_result(draft_result)
         assert draft_data is not None
         assert "id" in draft_data
-        
+
         draft_id = draft_data.get("id")
-        
+
         # Update draft
         update_result = await session.call_tool(
             "update_email",
@@ -319,7 +325,7 @@ async def test_e2e_email_draft_workflow():
             },
         )
         assert not update_result.isError
-        
+
         # Clean up - delete the draft
         delete_result = await session.call_tool(
             "delete_email",
@@ -330,7 +336,7 @@ async def test_e2e_email_draft_workflow():
 
 @pytest.mark.e2e
 @pytest.mark.slow
-@pytest.mark.asyncio 
+@pytest.mark.asyncio
 async def test_e2e_multi_account_support():
     """E2E test for multi-account functionality"""
     async for session in get_session():
@@ -339,19 +345,19 @@ async def test_e2e_multi_account_support():
         assert not accounts_result.isError
         accounts = parse_result(accounts_result, "list_accounts")
         assert accounts is not None
-        
+
         if len(accounts) > 1:
             # Test operations with different accounts
             for account in accounts[:2]:  # Test first two accounts
                 account_id = account["account_id"]
-                
+
                 # Test email listing for this account
                 email_result = await session.call_tool(
                     "list_emails",
                     {"account_id": account_id, "limit": 1},
                 )
                 assert not email_result.isError
-                
+
                 # Test calendar listing for this account
                 calendar_result = await session.call_tool(
                     "list_events",

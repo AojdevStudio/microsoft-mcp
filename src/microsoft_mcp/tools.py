@@ -2,8 +2,11 @@ import base64
 import datetime as dt
 import pathlib as pl
 from typing import Any
+
 from fastmcp import FastMCP
-from . import graph, auth
+
+from . import auth
+from . import graph
 
 mcp = FastMCP("microsoft-mcp")
 
@@ -583,7 +586,7 @@ def send_email(
         ]
         graph.request("POST", "/me/sendMail", account_id, json={"message": message})
         return {"status": "sent"}
-    elif has_large_attachments:
+    if has_large_attachments:
         # Create draft first, then add large attachments, then send
         # Message is already properly formatted above, so we can reuse it
 
@@ -619,9 +622,8 @@ def send_email(
 
         graph.request("POST", f"/me/messages/{message_id}/send", account_id)
         return {"status": "sent"}
-    else:
-        graph.request("POST", "/me/sendMail", account_id, json={"message": message})
-        return {"status": "sent"}
+    graph.request("POST", "/me/sendMail", account_id, json={"message": message})
+    return {"status": "sent"}
 
 
 @mcp.tool
@@ -707,16 +709,15 @@ def delete_email(account_id: str, email_id: str, permanent: bool = False) -> dic
         # Permanently delete
         graph.request("DELETE", f"/me/messages/{email_id}", account_id)
         return {"status": "permanently deleted"}
-    else:
-        # Move to Deleted Items folder
-        deleted_folder_id = "deleteditems"
-        graph.request(
-            "POST",
-            f"/me/messages/{email_id}/move",
-            account_id,
-            json={"destinationId": deleted_folder_id},
-        )
-        return {"status": "moved to trash"}
+    # Move to Deleted Items folder
+    deleted_folder_id = "deleteditems"
+    graph.request(
+        "POST",
+        f"/me/messages/{email_id}/move",
+        account_id,
+        json={"destinationId": deleted_folder_id},
+    )
+    return {"status": "moved to trash"}
 
 
 @mcp.tool
@@ -1725,7 +1726,7 @@ def export_contacts(
 
     if format == "json":
         return {"format": "json", "count": len(contacts), "contacts": contacts}
-    elif format == "csv":
+    if format == "csv":
         # Create CSV content
         import csv
         import io
@@ -1761,8 +1762,7 @@ def export_contacts(
             "count": len(contacts),
             "content": csv_buffer.getvalue(),
         }
-    else:
-        raise ValueError(f"Unsupported format: {format}. Use 'json' or 'csv'")
+    raise ValueError(f"Unsupported format: {format}. Use 'json' or 'csv'")
 
 
 @mcp.tool
@@ -2659,13 +2659,13 @@ def send_practice_report(
         Status of the email send operation
     """
     from .email_framework.templates.practice_report import PracticeReportTemplate
-    
+
     # Determine theme based on location
     theme = location.lower() if location.lower() in ["baytown", "humble"] else "baytown"
-    
+
     # Create template and render
     template = PracticeReportTemplate(theme=theme)
-    
+
     # Prepare data
     template_data = {
         "location": location,
@@ -2675,10 +2675,10 @@ def send_practice_report(
         "alerts": alerts or [],
         "recommendations": recommendations or []
     }
-    
+
     # Render the email
     html_content = template.render(template_data)
-    
+
     # Send using existing send_email function
     return send_email(
         account_id=account_id,
@@ -2717,15 +2717,15 @@ def send_executive_summary(
         Status of the email send operation
     """
     from .email_framework.templates.executive_summary import ExecutiveSummaryTemplate
-    
+
     # Create template with executive theme
     template = ExecutiveSummaryTemplate()
-    
+
     # Calculate totals
     total_production = sum(loc.get("production", 0) for loc in locations_data)
     total_goal = sum(loc.get("goal", 0) for loc in locations_data)
     overall_percentage = total_production / total_goal if total_goal > 0 else 0
-    
+
     # Prepare data
     template_data = {
         "period": period,
@@ -2735,14 +2735,14 @@ def send_executive_summary(
         "total_goal": total_goal,
         "overall_percentage": overall_percentage
     }
-    
+
     # Render the email
     html_content = template.render(template_data)
-    
+
     # Default subject if not provided
     if not subject:
         subject = f"Executive Summary - {period}"
-    
+
     # Send using existing send_email function
     return send_email(
         account_id=account_id,
@@ -2785,10 +2785,10 @@ def send_provider_update(
         Status of the email send operation
     """
     from .email_framework.templates.provider_update import ProviderUpdateTemplate
-    
+
     # Create template
     template = ProviderUpdateTemplate()
-    
+
     # Prepare data
     template_data = {
         "provider_name": provider_name,
@@ -2797,14 +2797,14 @@ def send_provider_update(
         "highlights": highlights or [],
         "recommendations": recommendations or []
     }
-    
+
     # Render the email
     html_content = template.render(template_data)
-    
+
     # Default subject if not provided
     if not subject:
         subject = f"Your Performance Update - {period or 'Current Period'}"
-    
+
     # Send using existing send_email function
     return send_email(
         account_id=account_id,
@@ -2849,10 +2849,10 @@ def send_alert_notification(
         Status of the email send operation
     """
     from .email_framework.templates.alert_notification import AlertNotificationTemplate
-    
+
     # Create template
     template = AlertNotificationTemplate()
-    
+
     # Prepare data
     template_data = {
         "alert_type": alert_type,
@@ -2862,15 +2862,15 @@ def send_alert_notification(
         "impact": impact,
         "recommended_actions": recommended_actions or []
     }
-    
+
     # Render the email
     html_content = template.render(template_data)
-    
+
     # Default subject if not provided
     if not subject:
         urgency_prefix = "🚨 URGENT: " if urgency == "immediate" else "⚠️ " if urgency == "high" else ""
         subject = f"{urgency_prefix}{title}"
-    
+
     # Send using existing send_email function
     return send_email(
         account_id=account_id,
@@ -2889,7 +2889,7 @@ def send_alert_notification(
 # Calendar function aliases - tests expect these shorter names
 list_events = list_calendar_events
 create_event = create_calendar_event
-update_event = update_calendar_event  
+update_event = update_calendar_event
 delete_event = delete_calendar_event
 
 # Contact function aliases - already correct names, but keeping for consistency
@@ -2902,9 +2902,9 @@ def _validate_email_address(email: str) -> bool:
     import re
     if not email or not isinstance(email, str):
         return False
-    
+
     # Simple email validation pattern
-    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
     return bool(re.match(pattern, email.strip()))
 
 
@@ -2926,10 +2926,411 @@ def validate_recipient_list(recipients: list[str]) -> list[str]:
 def ensure_html_structure(content: str) -> str:
     """Ensure HTML content has proper structure for email templates"""
     if not content:
-        return '<html><body></body></html>'
-    
+        return "<html><body></body></html>"
+
     # If content doesn't have html tags, wrap it
-    if not content.strip().startswith('<html'):
-        content = f'<html><body>{content}</body></html>'
-    
+    if not content.strip().startswith("<html"):
+        content = f"<html><body>{content}</body></html>"
+
     return content
+
+
+@mcp.tool
+def microsoft_operations(
+    account_id: str,
+    action: str,
+    data: dict[str, Any] | None = None,
+    template: str | None = None,
+    options: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    """Unified Microsoft operations tool with action-based routing.
+    
+    This tool consolidates multiple Microsoft Graph API operations into a single
+    interface with action-based parameters. It leverages parameter validation
+    from Story 1.1 and provides professional email styling through utilities.
+    
+    Args:
+        account_id: Microsoft account ID from list_accounts()
+        action: Operation to perform (e.g., "email.list", "email.send")
+        data: Action-specific data parameters
+        template: Optional email template type for styling
+        options: Additional options (pagination, filters, flags)
+        
+    Returns:
+        Action-specific response data
+        
+    Raises:
+        ValueError: If action is unknown or parameters are invalid
+        Exception: If Graph API operation fails
+        
+    Supported Actions:
+        - email.list: List emails with filtering
+        - email.send: Send email with optional template
+        - email.reply: Reply to email with styling
+        - email.draft: Create draft with template support
+        - email.delete: Delete email operations
+    """
+    # Import validation utilities
+
+    # Initialize data and options if not provided
+    data = data or {}
+    options = options or {}
+
+    # Route based on action
+    if action == "email.list":
+        return _handle_email_list(account_id, data, options)
+    if action == "email.send":
+        return _handle_email_send(account_id, data, template, options)
+    if action == "email.reply":
+        return _handle_email_reply(account_id, data, template, options)
+    if action == "email.draft":
+        return _handle_email_draft(account_id, data, template, options)
+    if action == "email.delete":
+        return _handle_email_delete(account_id, data, options)
+    raise ValueError(
+        f"Unknown action: {action}. "
+        f"Supported actions: email.list, email.send, email.reply, "
+        f"email.draft, email.delete"
+    )
+
+
+def _handle_email_list(
+    account_id: str,
+    data: dict[str, Any],
+    options: dict[str, Any]
+) -> dict[str, Any]:
+    """Handle email.list action.
+    
+    Data parameters:
+        - folder: Email folder name (default: inbox)
+        - search: Search query string
+        - include_body: Include email body (default: True)
+        
+    Options:
+        - limit: Maximum results (default: 10)
+        - skip: Number to skip for pagination
+    """
+    # Use Story 1.1 parameter validation framework
+    from .email_params import ListEmailParams
+
+    # Merge parameters for validation
+    params_dict = {"account_id": account_id}
+    params_dict.update(data)
+    params_dict.update(options)
+
+    # Validate parameters
+    try:
+        validated = ListEmailParams(**params_dict)
+    except Exception as e:
+        raise ValueError(f"Parameter validation failed: {e}")
+
+    # Extract validated parameters
+    folder = validated.folder or "inbox"
+    search_query = validated.search_query if hasattr(validated, "search_query") else None
+    include_body = validated.include_body if hasattr(validated, "include_body") else True
+    limit = validated.limit or 10
+    skip = validated.skip or 0
+
+    # Map folder name if needed
+    folder_mapped = FOLDERS.get(folder.lower(), folder)
+
+    # Call existing implementation
+    endpoint = f"/me/mailFolders/{folder_mapped}/messages"
+
+    params = {
+        "$top": min(limit, 50),
+        "$skip": skip,
+        "$orderby": "receivedDateTime desc"
+    }
+
+    if search_query:
+        params["$search"] = f'"{search_query}"'
+
+    if not include_body:
+        params["$select"] = "id,subject,from,toRecipients,receivedDateTime,hasAttachments"
+
+    response = graph.request("GET", endpoint, account_id, params=params)
+    emails = response.get("value", [])
+
+    # Format response
+    return {
+        "status": "success",
+        "action": "email.list",
+        "folder": folder,
+        "count": len(emails),
+        "emails": emails,
+        "has_more": "@odata.nextLink" in response
+    }
+
+
+def _handle_email_send(
+    account_id: str,
+    data: dict[str, Any],
+    template: str | None,
+    options: dict[str, Any]
+) -> dict[str, Any]:
+    """Handle email.send action.
+    
+    Data parameters:
+        - to: Recipient email(s)
+        - subject: Email subject
+        - body: Email body content
+        - cc: CC recipients (optional)
+        - bcc: BCC recipients (optional)
+        - attachments: File paths to attach (optional)
+        - template_data: Data for template rendering (optional)
+    """
+    from .email_framework.utils import format_attachments
+    from .email_framework.utils import get_default_signature
+    from .email_framework.utils import style_email_content
+    from .email_framework.utils import validate_email_recipients
+
+    # Validate required parameters
+    if not data.get("to"):
+        raise ValueError("Missing required parameter: to")
+    if not data.get("subject"):
+        raise ValueError("Missing required parameter: subject")
+    if not data.get("body"):
+        raise ValueError("Missing required parameter: body")
+
+    # Validate recipients
+    to_recipients = validate_email_recipients(data["to"])
+    cc_recipients = validate_email_recipients(data.get("cc", [])) if data.get("cc") else []
+    bcc_recipients = validate_email_recipients(data.get("bcc", [])) if data.get("bcc") else []
+
+    # Apply styling if template specified
+    body_content = data["body"]
+    if template:
+        body_content = style_email_content(
+            body=body_content,
+            subject=data["subject"],
+            theme=options.get("theme", "baytown"),
+            signature=get_default_signature(),
+            template_type=template,
+            template_data=data.get("template_data")
+        )
+    elif options.get("add_signature", True):
+        # Add signature to plain emails
+        body_content = f"{body_content}\n\n{get_default_signature()}"
+
+    # Build message
+    message = {
+        "subject": data["subject"],
+        "body": {
+            "contentType": "HTML" if template or "<" in body_content else "Text",
+            "content": body_content
+        },
+        "toRecipients": [{"emailAddress": {"address": email}} for email in to_recipients]
+    }
+
+    if cc_recipients:
+        message["ccRecipients"] = [{"emailAddress": {"address": email}} for email in cc_recipients]
+    if bcc_recipients:
+        message["bccRecipients"] = [{"emailAddress": {"address": email}} for email in bcc_recipients]
+
+    # Add attachments if provided
+    if data.get("attachments"):
+        attachments = format_attachments(data["attachments"])
+        if attachments:
+            message["attachments"] = attachments
+
+    # Send email
+    graph.request("POST", "/me/sendMail", account_id, json={"message": message})
+
+    return {
+        "status": "success",
+        "action": "email.send",
+        "to": to_recipients,
+        "subject": data["subject"],
+        "template_used": template,
+        "timestamp": dt.datetime.now(dt.UTC).isoformat()
+    }
+
+
+def _handle_email_reply(
+    account_id: str,
+    data: dict[str, Any],
+    template: str | None,
+    options: dict[str, Any]
+) -> dict[str, Any]:
+    """Handle email.reply action.
+    
+    Data parameters:
+        - email_id: ID of email to reply to
+        - body: Reply message body
+        - reply_all: Reply to all recipients (default: False)
+        - attachments: File paths to attach (optional)
+    """
+    from .email_framework.utils import format_attachments
+    from .email_framework.utils import get_default_signature
+    from .email_framework.utils import style_email_content
+
+    # Validate required parameters
+    if not data.get("email_id"):
+        raise ValueError("Missing required parameter: email_id")
+    if not data.get("body"):
+        raise ValueError("Missing required parameter: body")
+
+    # Apply styling if template specified
+    body_content = data["body"]
+    if template:
+        body_content = style_email_content(
+            body=body_content,
+            subject="Reply",
+            theme=options.get("theme", "baytown"),
+            signature=get_default_signature(),
+            template_type=template,
+            template_data=data.get("template_data")
+        )
+    elif options.get("add_signature", True):
+        body_content = f"{body_content}\n\n{get_default_signature()}"
+
+    # Build reply
+    message = {
+        "message": {
+            "body": {
+                "contentType": "HTML" if template or "<" in body_content else "Text",
+                "content": body_content
+            }
+        }
+    }
+
+    # Add attachments if provided
+    if data.get("attachments"):
+        attachments = format_attachments(data["attachments"])
+        if attachments:
+            message["message"]["attachments"] = attachments
+
+    # Send reply
+    action_type = "replyAll" if data.get("reply_all", False) else "reply"
+    endpoint = f"/me/messages/{data['email_id']}/{action_type}"
+
+    graph.request("POST", endpoint, account_id, json=message)
+
+    return {
+        "status": "success",
+        "action": "email.reply",
+        "email_id": data["email_id"],
+        "reply_all": data.get("reply_all", False),
+        "template_used": template,
+        "timestamp": dt.datetime.now(dt.UTC).isoformat()
+    }
+
+
+def _handle_email_draft(
+    account_id: str,
+    data: dict[str, Any],
+    template: str | None,
+    options: dict[str, Any]
+) -> dict[str, Any]:
+    """Handle email.draft action.
+    
+    Data parameters:
+        - to: Recipient email(s)
+        - subject: Email subject
+        - body: Email body content
+        - cc: CC recipients (optional)
+        - bcc: BCC recipients (optional)
+        - attachments: File paths to attach (optional)
+        - template_data: Data for template rendering (optional)
+    """
+    from .email_framework.utils import format_attachments
+    from .email_framework.utils import get_default_signature
+    from .email_framework.utils import style_email_content
+    from .email_framework.utils import validate_email_recipients
+
+    # Validate required parameters
+    if not data.get("to"):
+        raise ValueError("Missing required parameter: to")
+    if not data.get("subject"):
+        raise ValueError("Missing required parameter: subject")
+    if not data.get("body"):
+        raise ValueError("Missing required parameter: body")
+
+    # Validate recipients
+    to_recipients = validate_email_recipients(data["to"])
+    cc_recipients = validate_email_recipients(data.get("cc", [])) if data.get("cc") else []
+    bcc_recipients = validate_email_recipients(data.get("bcc", [])) if data.get("bcc") else []
+
+    # Apply styling if template specified
+    body_content = data["body"]
+    if template:
+        body_content = style_email_content(
+            body=body_content,
+            subject=data["subject"],
+            theme=options.get("theme", "baytown"),
+            signature=get_default_signature(),
+            template_type=template,
+            template_data=data.get("template_data")
+        )
+    elif options.get("add_signature", True):
+        body_content = f"{body_content}\n\n{get_default_signature()}"
+
+    # Build draft message
+    message = {
+        "subject": data["subject"],
+        "body": {
+            "contentType": "HTML" if template or "<" in body_content else "Text",
+            "content": body_content
+        },
+        "toRecipients": [{"emailAddress": {"address": email}} for email in to_recipients]
+    }
+
+    if cc_recipients:
+        message["ccRecipients"] = [{"emailAddress": {"address": email}} for email in cc_recipients]
+    if bcc_recipients:
+        message["bccRecipients"] = [{"emailAddress": {"address": email}} for email in bcc_recipients]
+
+    # Add attachments if provided
+    if data.get("attachments"):
+        attachments = format_attachments(data["attachments"])
+        if attachments:
+            message["attachments"] = attachments
+
+    # Create draft
+    response = graph.request("POST", "/me/messages", account_id, json=message)
+
+    return {
+        "status": "success",
+        "action": "email.draft",
+        "draft_id": response.get("id"),
+        "to": to_recipients,
+        "subject": data["subject"],
+        "template_used": template,
+        "timestamp": dt.datetime.now(dt.UTC).isoformat()
+    }
+
+
+def _handle_email_delete(
+    account_id: str,
+    data: dict[str, Any],
+    options: dict[str, Any]
+) -> dict[str, Any]:
+    """Handle email.delete action.
+    
+    Data parameters:
+        - email_id: ID of email to delete
+        - permanent: Permanently delete (default: False, moves to Deleted Items)
+    """
+    # Validate required parameters
+    if not data.get("email_id"):
+        raise ValueError("Missing required parameter: email_id")
+
+    if data.get("permanent", False):
+        # Permanently delete
+        graph.request("DELETE", f"/me/messages/{data['email_id']}", account_id)
+        action_taken = "permanently_deleted"
+    else:
+        # Move to Deleted Items folder
+        deleted_folder_id = "deleteditems"
+        move_data = {"destinationId": deleted_folder_id}
+        graph.request("POST", f"/me/messages/{data['email_id']}/move", account_id, json=move_data)
+        action_taken = "moved_to_trash"
+
+    return {
+        "status": "success",
+        "action": "email.delete",
+        "email_id": data["email_id"],
+        "action_taken": action_taken,
+        "timestamp": dt.datetime.now(dt.UTC).isoformat()
+    }

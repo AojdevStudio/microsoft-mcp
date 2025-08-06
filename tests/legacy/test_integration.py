@@ -20,6 +20,8 @@ from unittest.mock import patch
 
 import pytest
 
+pytestmark = pytest.mark.legacy  # Mark all tests in this file as legacy
+
 from microsoft_mcp.tools import create_calendar_event
 from microsoft_mcp.tools import create_email_draft
 from microsoft_mcp.tools import delete_calendar_event

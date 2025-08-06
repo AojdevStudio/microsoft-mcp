@@ -61,10 +61,11 @@ uv run python -m microsoft_mcp.email_framework.test_runner
    - All functionality is exposed through tools defined in `tools.py`
 
 2. **Tools Module**: `src/microsoft_mcp/tools.py` 
-   - Central hub containing all 61 MCP tool definitions
+   - Central hub containing MCP tool definitions (consolidating from 61 → 15)
+   - NEW: Unified `microsoft_operations` tool with action-based routing
    - Each tool maps to Microsoft Graph API operations
    - Handles multi-account support via `account_id` parameter
-   - Currently undergoing API consolidation (61 → 46 tools)
+   - Email actions complete (list, send, reply, draft, delete)
 
 3. **Authentication Layer**: `src/microsoft_mcp/auth.py`
    - Manages MSAL authentication for multiple Microsoft accounts
@@ -92,12 +93,13 @@ uv run python -m microsoft_mcp.email_framework.test_runner
 
 ### Current Refactoring Focus
 
-The codebase is undergoing API consolidation to:
-- Reduce tool count from 61 to 46 (25% reduction)
-- Remove business logic from API layer (email templates)
-- Unify search operations into single parameterized tool
-- Consolidate file operations with enhanced filtering
-- Standardize parameter patterns across similar tools
+The codebase is undergoing ultra-consolidation to:
+- Reduce tool count from 61 to 15 (75% reduction) - IN PROGRESS
+- **NEW**: Unified `microsoft_operations` tool with action-based routing (Story 1.2 COMPLETE)
+- Email actions implemented: `email.list`, `email.send`, `email.reply`, `email.draft`, `email.delete`
+- Professional email styling preserved as utilities in `email_framework/utils.py`
+- Next: Calendar actions (Story 1.3), File & Contact actions (Story 1.4)
+- Parameter validation framework from Story 1.1 integrated throughout
 
 ## Development Workflow
 
@@ -105,4 +107,30 @@ The codebase is undergoing API consolidation to:
 - Follow DRY principles to avoid code duplication
 - Maintain separation of concerns between API and business logic
 - All new tools must support multi-account via `account_id` parameter
-- Email templates should be client-side concerns, not API tools
+- Email templates are utilities, not separate tools
+
+### Unified Tool Usage & Migration
+
+```python
+# Example: Using the new microsoft_operations tool
+result = microsoft_operations(
+    account_id="user@company.com",
+    action="email.send",
+    data={
+        "to": "recipient@example.com",
+        "subject": "Monthly Report",
+        "body": "Please find attached...",
+        "cc": ["manager@company.com"],
+        "attachments": ["/path/to/report.pdf"]
+    },
+    template="practice_report",  # Optional: Apply professional template
+    options={"priority": "high"}
+)
+
+# Migration from old tools to unified tool:
+# OLD: send_email(account_id, to, subject, body, cc, bcc, attachments)
+# NEW: microsoft_operations(account_id, "email.send", data={...})
+
+# OLD: list_emails(account_id, folder, limit, skip, search_query)  
+# NEW: microsoft_operations(account_id, "email.list", data={...}, options={...})
+```
