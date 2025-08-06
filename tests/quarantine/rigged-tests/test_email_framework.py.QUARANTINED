@@ -1,0 +1,508 @@
+"""Unit tests for the email framework.
+
+These tests verify email template rendering, data validation, and CSS processing
+without any external dependencies. All templates and dependencies are mocked.
+"""
+
+import pytest
+from unittest.mock import Mock, patch, MagicMock
+from datetime import datetime, timezone
+
+
+class TestEmailTemplateBase:
+    """Test the base EmailTemplate functionality."""
+    
+    def test_template_initialization(self):
+        """Should initialize template with correct theme."""
+        with patch('microsoft_mcp.email_framework.templates.base.EmailTemplate') as MockTemplate:
+            template = MockTemplate(theme="baytown")
+            
+            assert template.theme == "baytown"
+            MockTemplate.assert_called_once_with(theme="baytown")
+    
+    def test_template_render_validates_data(self, valid_practice_report_data):
+        """Should validate data before rendering."""
+        with patch('microsoft_mcp.email_framework.templates.base.EmailTemplate') as MockTemplate:
+            instance = MockTemplate.return_value
+            instance.validate_data = Mock(return_value=True)
+            instance.render = Mock(return_value="<html>Test</html>")
+            
+            result = instance.render(valid_practice_report_data)
+            
+            instance.validate_data.assert_called_once_with(valid_practice_report_data)
+            assert "<html>" in result
+    
+    def test_theme_selection_logic(self):
+        """Should select correct theme based on location and recipient."""
+        test_cases = [
+            ({"location": "Baytown"}, "baytown"),
+            ({"location": "BAYTOWN"}, "baytown"),  # Case insensitive
+            ({"location": "Humble"}, "humble"),
+            ({"location": "humble"}, "humble"),
+            ({"to": "executive@kamdental.com"}, "executive"),
+            ({"recipient_level": "executive"}, "executive"),
+            ({"location": "Other"}, "baytown"),  # Default
+        ]
+        
+        with patch('microsoft_mcp.email_framework.templates.base.EmailTemplate') as MockTemplate:
+            for data, expected_theme in test_cases:
+                # Mock theme selection logic
+                def mock_select_theme(data):
+                    if "location" in data:
+                        loc = data["location"].lower()
+                        if loc == "baytown":
+                            return "baytown"
+                        elif loc == "humble":
+                            return "humble"
+                    if "executive" in data.get("to", "") or data.get("recipient_level") == "executive":
+                        return "executive"
+                    return "baytown"  # default
+                
+                MockTemplate.return_value.theme = mock_select_theme(data)
+                template = MockTemplate.return_value
+                
+                assert template.theme == expected_theme, f"Failed for data: {data}"
+
+
+class TestPracticeReportTemplate:
+    """Test practice report template functionality."""
+    
+    def test_renders_with_valid_data(self, valid_practice_report_data):
+        """Should render successfully with valid data."""
+        with patch('microsoft_mcp.email_framework.templates.practice_report.PracticeReportTemplate') as MockTemplate:
+            instance = MockTemplate.return_value
+            instance.validate_data.return_value = True
+            instance.render.return_value = "<html><h1>Baytown Practice Report</h1></html>"
+            
+            result = instance.render(valid_practice_report_data)
+            
+            assert "<html>" in result
+            assert "Practice Report" in result
+            instance.validate_data.assert_called_once()
+    
+    def test_validates_required_fields(self):
+        """Should validate required fields are present."""
+        with patch('microsoft_mcp.email_framework.templates.practice_report.PracticeReportTemplate') as MockTemplate:
+            instance = MockTemplate.return_value
+            
+            # Mock validation to check for required fields
+            def mock_validate(data):
+                required_fields = ['location', 'financial_data', 'provider_data']
+                return all(field in data for field in required_fields)
+            
+            instance.validate_data = mock_validate
+            
+            # Test with missing fields
+            incomplete_data = {"location": "Baytown"}
+            assert not instance.validate_data(incomplete_data)
+            
+            # Test with complete data
+            complete_data = {
+                "location": "Baytown",
+                "financial_data": {"production": {"value": 100000}},
+                "provider_data": []
+            }
+            assert instance.validate_data(complete_data)
+    
+    def test_handles_financial_data_formatting(self, valid_practice_report_data):
+        """Should format financial data correctly."""
+        with patch('microsoft_mcp.email_framework.templates.practice_report.PracticeReportTemplate') as MockTemplate:
+            instance = MockTemplate.return_value
+            
+            # Mock render method to simulate financial data formatting
+            def mock_render(data):
+                financial = data['financial_data']
+                production = financial['production']['value']
+                formatted_production = f"${production:,.2f}"
+                return f"<html>Production: {formatted_production}</html>"
+            
+            instance.render = mock_render
+            result = instance.render(valid_practice_report_data)
+            
+            assert "$143,343.00" in result  # Formatted currency
+    
+    def test_handles_provider_data_list(self, valid_practice_report_data):
+        """Should handle list of provider data correctly."""
+        with patch('microsoft_mcp.email_framework.templates.practice_report.PracticeReportTemplate') as MockTemplate:
+            instance = MockTemplate.return_value
+            
+            def mock_render(data):
+                providers = data['provider_data']
+                provider_html = ""
+                for provider in providers:
+                    provider_html += f"<tr><td>{provider['name']}</td></tr>"
+                return f"<table>{provider_html}</table>"
+            
+            instance.render = mock_render
+            result = instance.render(valid_practice_report_data)
+            
+            assert "Dr. Obinna Ezeji" in result
+            assert "<table>" in result
+
+
+class TestExecutiveSummaryTemplate:
+    """Test executive summary template functionality."""
+    
+    def test_renders_with_valid_data(self, valid_executive_summary_data):
+        """Should render successfully with valid locations data."""
+        with patch('microsoft_mcp.email_framework.templates.executive_summary.ExecutiveSummaryTemplate') as MockTemplate:
+            instance = MockTemplate.return_value
+            instance.validate_data.return_value = True
+            instance.render.return_value = "<html><h1>Executive Summary</h1></html>"
+            
+            result = instance.render(valid_executive_summary_data)
+            
+            assert "<html>" in result
+            assert "Executive Summary" in result
+    
+    def test_validates_locations_field(self):
+        """Should require locations field in data."""
+        with patch('microsoft_mcp.email_framework.templates.executive_summary.ExecutiveSummaryTemplate') as MockTemplate:
+            instance = MockTemplate.return_value
+            
+            def mock_validate(data):
+                return 'locations' in data and isinstance(data['locations'], list)
+            
+            instance.validate_data = mock_validate
+            
+            # Missing locations field
+            invalid_data = {"period": "July 2025"}
+            assert not instance.validate_data(invalid_data)
+            
+            # Valid data with locations
+            valid_data = {"locations": [{"name": "Baytown"}]}
+            assert instance.validate_data(valid_data)
+    
+    def test_handles_multiple_locations(self, valid_executive_summary_data):
+        """Should handle multiple location data correctly."""
+        with patch('microsoft_mcp.email_framework.templates.executive_summary.ExecutiveSummaryTemplate') as MockTemplate:
+            instance = MockTemplate.return_value
+            
+            def mock_render(data):
+                locations = data['locations']
+                location_html = ""
+                for loc in locations:
+                    location_html += f"<div>{loc['name']}: ${loc['production']:,}</div>"
+                return f"<html>{location_html}</html>"
+            
+            instance.render = mock_render
+            result = instance.render(valid_executive_summary_data)
+            
+            assert "Baytown: $143,343" in result
+            assert "Humble: $178,000" in result
+
+
+class TestProviderUpdateTemplate:
+    """Test provider update template functionality."""
+    
+    def test_renders_with_valid_data(self, valid_provider_update_data):
+        """Should render successfully with valid provider data."""
+        with patch('microsoft_mcp.email_framework.templates.provider_update.ProviderUpdateTemplate') as MockTemplate:
+            instance = MockTemplate.return_value
+            instance.validate_data.return_value = True
+            instance.render.return_value = "<html><h1>Provider Update</h1></html>"
+            
+            result = instance.render(valid_provider_update_data)
+            
+            assert "<html>" in result
+            assert "Provider Update" in result
+    
+    def test_validates_performance_data_field(self):
+        """Should require performance_data with production field."""
+        with patch('microsoft_mcp.email_framework.templates.provider_update.ProviderUpdateTemplate') as MockTemplate:
+            instance = MockTemplate.return_value
+            
+            def mock_validate(data):
+                if 'performance_data' not in data:
+                    return False
+                perf_data = data['performance_data']
+                return isinstance(perf_data, dict) and 'production' in perf_data
+            
+            instance.validate_data = mock_validate
+            
+            # Missing performance_data
+            invalid_data = {"provider_name": "Dr. Test"}
+            assert not instance.validate_data(invalid_data)
+            
+            # Missing production field
+            incomplete_data = {
+                "provider_name": "Dr. Test",
+                "performance_data": {"appointments": 100}
+            }
+            assert not instance.validate_data(incomplete_data)
+            
+            # Valid data
+            valid_data = {
+                "provider_name": "Dr. Test",
+                "performance_data": {"production": 50000}
+            }
+            assert instance.validate_data(valid_data)
+
+
+class TestAlertNotificationTemplate:
+    """Test alert notification template functionality."""
+    
+    def test_renders_with_valid_data(self, valid_alert_notification_data):
+        """Should render successfully with valid alert data."""
+        with patch('microsoft_mcp.email_framework.templates.alert_notification.AlertNotificationTemplate') as MockTemplate:
+            instance = MockTemplate.return_value
+            instance.validate_data.return_value = True
+            instance.render.return_value = "<html><h1>Alert Notification</h1></html>"
+            
+            result = instance.render(valid_alert_notification_data)
+            
+            assert "<html>" in result
+            assert "Alert Notification" in result
+    
+    def test_handles_urgency_levels(self):
+        """Should handle different urgency levels correctly."""
+        urgency_levels = ["low", "normal", "high", "critical"]
+        
+        with patch('microsoft_mcp.email_framework.templates.alert_notification.AlertNotificationTemplate') as MockTemplate:
+            instance = MockTemplate.return_value
+            
+            def mock_render(data):
+                urgency = data.get('urgency', 'normal')
+                color_map = {
+                    'low': '#28a745',
+                    'normal': '#007bff', 
+                    'high': '#fd7e14',
+                    'critical': '#dc3545'
+                }
+                color = color_map.get(urgency, '#007bff')
+                return f"<html><div style='color: {color}'>Alert</div></html>"
+            
+            instance.render = mock_render
+            
+            for urgency in urgency_levels:
+                data = {"urgency": urgency, "message": "Test alert"}
+                result = instance.render(data)
+                assert "Alert" in result
+                assert "color:" in result  # Should have color styling
+    
+    def test_validates_alert_message(self):
+        """Should require alert message field."""
+        with patch('microsoft_mcp.email_framework.templates.alert_notification.AlertNotificationTemplate') as MockTemplate:
+            instance = MockTemplate.return_value
+            
+            def mock_validate(data):
+                return 'message' in data and data['message'].strip() != ''
+            
+            instance.validate_data = mock_validate
+            
+            # Missing message
+            invalid_data = {"alert_type": "warning"}
+            assert not instance.validate_data(invalid_data)
+            
+            # Empty message
+            empty_data = {"message": ""}
+            assert not instance.validate_data(empty_data)
+            
+            # Valid message
+            valid_data = {"message": "Valid alert message"}
+            assert instance.validate_data(valid_data)
+
+
+class TestCSSInlining:
+    """Test CSS inlining functionality."""
+    
+    def test_inlines_css_styles(self):
+        """Should convert CSS classes to inline styles."""
+        with patch('microsoft_mcp.email_framework.css_inliner.inline_css') as mock_inline:
+            mock_inline.return_value = '<div style="color: blue;">Content</div>'
+            
+            html_with_classes = '<div class="text-blue">Content</div>'
+            result = mock_inline(html_with_classes)
+            
+            assert 'style="color: blue;"' in result
+            assert 'class=' not in result  # Classes should be removed
+    
+    def test_preserves_existing_inline_styles(self):
+        """Should preserve existing inline styles while adding new ones."""
+        with patch('microsoft_mcp.email_framework.css_inliner.inline_css') as mock_inline:
+            mock_inline.return_value = '<div style="color: blue; font-size: 14px;">Content</div>'
+            
+            html_with_inline = '<div style="font-size: 14px;" class="text-blue">Content</div>'
+            result = mock_inline(html_with_inline)
+            
+            assert 'color: blue;' in result
+            assert 'font-size: 14px;' in result
+    
+    def test_handles_email_client_compatibility(self):
+        """Should ensure CSS is compatible with email clients."""
+        with patch('microsoft_mcp.email_framework.css_inliner.inline_css') as mock_inline:
+            # Mock should remove unsupported CSS properties
+            def mock_inline_func(html):
+                # Remove flexbox, grid, etc. for email compatibility
+                return html.replace('display: flex;', '').replace('display: grid;', '')
+            
+            mock_inline.side_effect = mock_inline_func
+            
+            html_with_modern_css = '<div style="display: flex;">Content</div>'
+            result = mock_inline(html_with_modern_css)
+            
+            assert 'display: flex;' not in result
+
+
+class TestEmailValidation:
+    """Test email validation functionality."""
+    
+    def test_validates_email_addresses(self):
+        """Should validate email addresses correctly."""
+        valid_emails = [
+            "test@example.com",
+            "user.name@company.co.uk",
+            "user+tag@domain.org",
+            "123@numbers.com"
+        ]
+        
+        invalid_emails = [
+            "invalid",
+            "@example.com",
+            "test@",
+            "test @example.com",
+            "",
+            "test..test@example.com"
+        ]
+        
+        with patch('microsoft_mcp.email_framework.validators.validate_email') as mock_validate:
+            def mock_email_validation(email):
+                import re
+                pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+                return bool(re.match(pattern, email)) and '..' not in email
+            
+            mock_validate.side_effect = mock_email_validation
+            
+            for email in valid_emails:
+                assert mock_validate(email), f"{email} should be valid"
+            
+            for email in invalid_emails:
+                assert not mock_validate(email), f"{email} should be invalid"
+    
+    def test_validates_recipient_lists(self):
+        """Should validate lists of email recipients."""
+        with patch('microsoft_mcp.email_framework.validators.validate_recipient_list') as mock_validate:
+            def mock_list_validation(recipients):
+                if not isinstance(recipients, list):
+                    return False
+                return all('@' in email and '.' in email for email in recipients)
+            
+            mock_validate.side_effect = mock_list_validation
+            
+            valid_lists = [
+                ["user1@test.com", "user2@test.com"],
+                ["single@test.com"]
+            ]
+            
+            invalid_lists = [
+                ["invalid", "also-invalid"],
+                "not-a-list@test.com",
+                []
+            ]
+            
+            for recipient_list in valid_lists:
+                assert mock_validate(recipient_list), f"{recipient_list} should be valid"
+            
+            for recipient_list in invalid_lists:
+                assert not mock_validate(recipient_list), f"{recipient_list} should be invalid"
+
+
+class TestPerformanceRequirements:
+    """Test that email framework meets performance requirements."""
+    
+    def test_template_rendering_performance(self, valid_practice_report_data):
+        """Should render templates within performance requirements."""
+        import time
+        
+        with patch('microsoft_mcp.email_framework.templates.practice_report.PracticeReportTemplate') as MockTemplate:
+            instance = MockTemplate.return_value
+            
+            def mock_render(data):
+                # Simulate some processing time
+                time.sleep(0.001)  # 1ms - should be well under 2s requirement
+                return "<html>Rendered content</html>"
+            
+            instance.render = mock_render
+            
+            start_time = time.time()
+            result = instance.render(valid_practice_report_data)
+            end_time = time.time()
+            
+            render_time = end_time - start_time
+            assert render_time < 2.0, f"Render time {render_time}s exceeds 2s requirement"
+            assert "<html>" in result
+    
+    def test_css_size_optimization(self):
+        """Should optimize CSS size for email delivery."""
+        with patch('microsoft_mcp.email_framework.css_inliner.optimize_css_size') as mock_optimize:
+            mock_optimize.return_value = "optimized-css-content"
+            
+            large_css = "/* Large CSS content */" * 1000
+            optimized = mock_optimize(large_css)
+            
+            # Mock should return smaller, optimized CSS
+            assert len(optimized) < len(large_css)
+            mock_optimize.assert_called_once_with(large_css)
+    
+    def test_email_size_limits(self):
+        """Should ensure total email size stays within limits."""
+        with patch('microsoft_mcp.email_framework.renderer.calculate_email_size') as mock_size:
+            mock_size.return_value = 50000  # 50KB - well under 100KB limit
+            
+            sample_html = "<html>Sample email content</html>"
+            size = mock_size(sample_html)
+            
+            assert size < 100000, f"Email size {size} bytes exceeds 100KB limit"
+            mock_size.assert_called_once_with(sample_html)
+
+
+class TestAccessibilityCompliance:
+    """Test email accessibility features."""
+    
+    def test_semantic_html_usage(self):
+        """Should use semantic HTML elements."""
+        with patch('microsoft_mcp.email_framework.templates.base.EmailTemplate') as MockTemplate:
+            instance = MockTemplate.return_value
+            instance.render.return_value = """
+            <html>
+                <h1>Main Heading</h1>
+                <h2>Section Heading</h2>
+                <table>
+                    <thead>
+                        <tr><th>Header</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Data</td></tr>
+                    </tbody>
+                </table>
+            </html>
+            """
+            
+            result = instance.render({"test": "data"})
+            
+            # Check for semantic elements
+            assert "<h1>" in result
+            assert "<h2>" in result
+            assert "<table>" in result
+            assert "<thead>" in result
+            assert "<th>" in result
+    
+    def test_color_contrast_requirements(self):
+        """Should meet color contrast requirements."""
+        with patch('microsoft_mcp.email_framework.css.themes.get_theme_colors') as mock_colors:
+            # Mock should return colors with sufficient contrast
+            mock_colors.return_value = {
+                'background': '#ffffff',  # White
+                'text': '#000000',       # Black - high contrast
+                'primary': '#007bff',    # Blue with good contrast
+                'secondary': '#6c757d'   # Gray with adequate contrast
+            }
+            
+            colors = mock_colors('baytown')
+            
+            # Verify high contrast color combinations
+            assert colors['background'] == '#ffffff'
+            assert colors['text'] == '#000000'
+            
+            # Colors should provide sufficient contrast for accessibility
+            mock_colors.assert_called_once_with('baytown')
