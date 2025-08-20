@@ -63,6 +63,13 @@ So that **all email functionality is consolidated into the unified tool architec
 - Apply Story 1.1's parameter validation for each new action type
 - Maintain consistent response format across all 10 email actions
 
+**Specific Graph API Methods (Microsoft Graph v1.0):**
+- `email.forward`: POST `/me/messages/{message-id}/forward` - Forward message immediately
+- `email.move`: POST `/me/messages/{message-id}/move` - Move message to folder
+- `email.mark`: PATCH `/me/messages/{message-id}` - Update message properties (isRead, importance)
+- `email.search`: GET `/me/messages?$search="{query}"` - Search messages with query
+- `email.get`: GET `/me/messages/{message-id}` - Retrieve specific message with details
+
 **Email Styling Integration:**
 - Forward action integrates with professional email templates
 - Maintain KamDental branding consistency across all styled operations
@@ -95,6 +102,56 @@ So that **all email functionality is consolidated into the unified tool architec
 - `email.mark` - Mark email as read/unread/important with batch support
 - `email.search` - Search emails with advanced filtering options
 - `email.get` - Retrieve specific email with attachment options
+
+**Implementation Examples (Graph API Calls):**
+```python
+# email.forward - POST /me/messages/{id}/forward
+def handle_forward(graph, email_id, to_recipients, comment=None):
+    body = {
+        "toRecipients": [{"emailAddress": {"address": addr}} for addr in to_recipients]
+    }
+    if comment:
+        body["comment"] = apply_email_styling(comment)  # Use Story 1.2 utilities
+    return graph.post(f"/me/messages/{email_id}/forward", json=body)
+
+# email.move - POST /me/messages/{id}/move
+def handle_move(graph, email_id, destination_folder):
+    # Map folder names to IDs (inbox, sent, drafts, deleteditems, etc.)
+    folder_id = resolve_folder_id(destination_folder)
+    body = {"destinationId": folder_id}
+    return graph.post(f"/me/messages/{email_id}/move", json=body)
+
+# email.mark - PATCH /me/messages/{id}
+def handle_mark(graph, email_id, mark_as):
+    body = {}
+    if mark_as == "read":
+        body["isRead"] = True
+    elif mark_as == "unread":
+        body["isRead"] = False
+    elif mark_as == "important":
+        body["importance"] = "high"
+    return graph.patch(f"/me/messages/{email_id}", json=body)
+
+# email.search - GET /me/messages with $search parameter
+def handle_search(graph, query, folder=None, limit=20):
+    params = {
+        "$search": f'"{query}"',
+        "$top": limit,
+        "$select": "id,subject,from,receivedDateTime,bodyPreview"
+    }
+    if folder:
+        endpoint = f"/me/mailFolders/{folder}/messages"
+    else:
+        endpoint = "/me/messages"
+    return graph.get(endpoint, params=params)
+
+# email.get - GET /me/messages/{id} with optional expansion
+def handle_get(graph, email_id, include_attachments=False):
+    params = {"$select": "id,subject,body,from,to,cc,receivedDateTime,hasAttachments"}
+    if include_attachments:
+        params["$expand"] = "attachments"
+    return graph.get(f"/me/messages/{email_id}", params=params)
+```
 
 ## Definition of Done
 
