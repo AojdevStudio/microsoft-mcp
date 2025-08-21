@@ -147,3 +147,154 @@ def authenticate_new_account() -> Account | None:
         )
 
     return None
+
+
+def refresh_token(account_id: str) -> dict[str, str]:
+    """Refresh access token for a specific account"""
+    app = get_app()
+    
+    # Find the account
+    accounts = app.get_accounts()
+    account = None
+    for acc in accounts:
+        if acc["home_account_id"] == account_id:
+            account = acc
+            break
+    
+    if not account:
+        raise ValueError(f"Account {account_id} not found")
+    
+    # Try to get token silently (refresh if needed)
+    result = app.acquire_token_silent(SCOPES, account=account)
+    
+    if "error" in result:
+        raise Exception(f"Token refresh failed: {result.get('error_description', result['error'])}")
+    
+    # Save updated cache
+    cache = app.token_cache
+    if isinstance(cache, msal.SerializableTokenCache) and cache.has_state_changed:
+        _write_cache(cache.serialize())
+    
+    return {
+        "status": "success",
+        "message": "Token refreshed successfully",
+        "expires_in": result.get("expires_in", 0),
+        "token_type": result.get("token_type", "Bearer")
+    }
+
+
+def logout_account(account_id: str) -> dict[str, str]:
+    """Logout and remove a specific account from the cache"""
+    app = get_app()
+    
+    # Find the account
+    accounts = app.get_accounts()
+    account = None
+    for acc in accounts:
+        if acc["home_account_id"] == account_id:
+            account = acc
+            break
+    
+    if not account:
+        return {"status": "error", "message": f"Account {account_id} not found"}
+    
+    # Remove the account from cache
+    app.remove_account(account)
+    
+    # Save updated cache
+    cache = app.token_cache
+    if isinstance(cache, msal.SerializableTokenCache) and cache.has_state_changed:
+        _write_cache(cache.serialize())
+    
+    return {
+        "status": "success",
+        "message": f"Account {account['username']} logged out successfully"
+    }
+
+
+def get_auth_status() -> dict[str, any]:
+    """Get authentication status for all accounts"""
+    app = get_app()
+    accounts = app.get_accounts()
+    
+    account_statuses = []
+    for account in accounts:
+        # Check if we can get a token silently (indicates valid refresh token)
+        result = app.acquire_token_silent(SCOPES, account=account)
+        
+        status = {
+            "account_id": account["home_account_id"],
+            "username": account["username"],
+            "authenticated": "error" not in result,
+        }
+        
+        if "error" not in result:
+            status["expires_in"] = result.get("expires_in", 0)
+            status["token_type"] = result.get("token_type", "Bearer")
+        else:
+            status["error"] = result.get("error_description", result.get("error"))
+        
+        account_statuses.append(status)
+    
+    return {
+        "status": "success",
+        "total_accounts": len(accounts),
+        "authenticated_accounts": len([s for s in account_statuses if s["authenticated"]]),
+        "accounts": account_statuses
+    }
+
+
+def authenticate_account() -> dict[str, any]:
+    """Start device flow authentication for new account"""
+    app = get_app()
+    
+    flow = app.initiate_device_flow(scopes=SCOPES)
+    if "user_code" not in flow:
+        return {
+            "status": "error",
+            "message": f"Failed to get device code: {flow.get('error_description', 'Unknown error')}"
+        }
+    
+    return {
+        "status": "success",
+        "verification_uri": flow.get("verification_uri", flow.get("verification_url", "https://microsoft.com/devicelogin")),
+        "user_code": flow["user_code"],
+        "expires_in": flow.get("expires_in", 900),
+        "message": "Visit the verification URI and enter the user code to complete authentication",
+        "flow_cache": app.token_cache.serialize() if hasattr(app.token_cache, 'serialize') else "{}"
+    }
+
+
+def complete_authentication(flow_cache: str) -> dict[str, any]:
+    """Complete authentication using cached flow data"""
+    app = get_app()
+    
+    # Restore cache state
+    if isinstance(app.token_cache, msal.SerializableTokenCache):
+        app.token_cache.deserialize(flow_cache)
+    
+    # Get accounts to see if authentication completed
+    accounts = app.get_accounts()
+    
+    if not accounts:
+        return {
+            "status": "error",
+            "message": "Authentication not completed or timed out"
+        }
+    
+    # Find the newest account (most recently authenticated)
+    newest_account = accounts[-1]
+    
+    # Save cache
+    cache = app.token_cache
+    if isinstance(cache, msal.SerializableTokenCache) and cache.has_state_changed:
+        _write_cache(cache.serialize())
+    
+    return {
+        "status": "success",
+        "message": "Authentication completed successfully",
+        "account": {
+            "username": newest_account["username"],
+            "account_id": newest_account["home_account_id"]
+        }
+    }

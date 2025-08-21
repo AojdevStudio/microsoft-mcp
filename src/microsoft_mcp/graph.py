@@ -328,3 +328,7 @@ def search_query(
             break
 
         payload["requests"][0]["from"] += payload["requests"][0]["size"]
+
+
+# Alias for backward compatibility - tests expect this function name
+paginate = request_paginated

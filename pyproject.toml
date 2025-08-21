@@ -13,6 +13,32 @@ dependencies = [
     "msal>=1.32.3",
     "python-dotenv>=1.1.0",
 ]
+keywords = [
+    "microsoft",
+    "graph",
+    "api",
+    "mcp",
+    "ai",
+    "assistant",
+    "outlook",
+    "calendar",
+    "onedrive",
+    "email",
+    "automation",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Communications :: Email",
+    "Topic :: Office/Business",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
+]
 
 [project.scripts]
 microsoft-mcp = "microsoft_mcp.server:main"
@@ -27,4 +53,185 @@ dev = [
     "pytest>=8.4.0",
     "pytest-asyncio>=1.0.0",
     "pytest-cov>=6.2.1",
+    "ruff>=0.1.0",
+    "mypy>=1.7.0",
+    "twine>=4.0.0",
 ]
+
+# Ruff configuration for linting and formatting
+[tool.ruff]
+# Target Python 3.12+ syntax
+target-version = "py312"
+
+# Set the maximum line length to 88 (Black's default)
+line-length = 88
+
+# Enable specific rule categories
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # Pyflakes
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "SIM", # flake8-simplify
+    "I",   # isort
+    "N",   # pep8-naming
+    "C90", # mccabe complexity
+    "S",   # flake8-bandit (security)
+    "T20", # flake8-print
+    "PIE", # flake8-pie
+    "Q",   # flake8-quotes
+    "RET", # flake8-return
+    "C4",  # flake8-comprehensions
+    "EM",  # flake8-errmsg
+    "ISC", # flake8-implicit-str-concat
+    "ICN", # flake8-import-conventions
+    "PT",  # flake8-pytest-style
+]
+
+# Ignore specific rules that might be too strict for this project
+ignore = [
+    "S101",  # Use of assert (common in tests)
+    "T201",  # print statements (might be needed for CLI output)
+    "EM101", # String literals in exceptions (sometimes necessary)
+    "EM102", # f-string in exceptions (sometimes more readable)
+]
+
+# Allow specific files to have different rules
+[tool.ruff.per-file-ignores]
+"tests/*" = [
+    "S101",  # Allow assert in tests
+    "T201",  # Allow print in tests
+    "S106",  # Allow hardcoded passwords in tests
+    "S108",  # Allow insecure temp file usage in tests
+]
+"scripts/*" = [
+    "T201",  # Allow print in scripts
+]
+"authenticate.py" = [
+    "T201",  # Allow print in authentication script
+]
+
+# Configure import sorting
+[tool.ruff.isort]
+known-first-party = ["microsoft_mcp"]
+force-single-line = true
+
+# Configure mccabe complexity
+[tool.ruff.mccabe]
+max-complexity = 10
+
+# MyPy configuration for type checking
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+# Ignore missing imports for external libraries that don't have type stubs
+[[tool.mypy.overrides]]
+module = [
+    "msal.*",
+    "fastmcp.*",
+    "dotenv.*",
+]
+ignore_missing_imports = true
+
+# Pytest configuration
+[tool.pytest.ini_options]
+# Include both new and legacy tests temporarily
+testpaths = ["tests"]
+minversion = "8.0"
+addopts = [
+    "-v",
+    "--strict-markers",
+    "--strict-config",
+    "--verbose",
+    "--tb=short",
+    "--durations=10",
+    "--color=yes",
+    "--ignore=tests/quarantine",
+]
+# Exclude quarantined tests from test discovery
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+# Test markers for organizing tests
+markers = [
+    "legacy: mark test as legacy (to be deprecated)",
+    "unit: Unit tests that don't require external dependencies",
+    "integration: Integration tests that may require external services",
+    "email_framework: Tests specific to email framework functionality",
+    "slow: Tests that take a long time to run",
+    "auth: Tests related to authentication functionality",
+    "graph_api: Tests that interact with Microsoft Graph API",
+]
+
+# Coverage configuration
+[tool.coverage.run]
+source = ["src/microsoft_mcp"]
+omit = [
+    "*/tests/*",
+    "*/test_*",
+    "*/__pycache__/*",
+    "*/site-packages/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+show_missing = true
+precision = 2
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+# Bandit security configuration
+[tool.bandit]
+exclude_dirs = ["tests", "scripts"]
+skips = [
+    "B101",  # Skip assert_used test (common in tests)
+    "B603",  # Skip subprocess without shell equals false (subprocess used safely)
+]
+
+# Configuration for package building
+[tool.hatch.build.targets.wheel]
+packages = ["src/microsoft_mcp"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/tests",
+    "/README.md",
+    "/LICENSE",
+    "/pyproject.toml",
+]
+
+# Metadata for package distribution
+[project.urls]
+Homepage = "https://github.com/elyxlz/microsoft-mcp"
+Repository = "https://github.com/elyxlz/microsoft-mcp.git"
+Issues = "https://github.com/elyxlz/microsoft-mcp/issues"
+Changelog = "https://github.com/elyxlz/microsoft-mcp/blob/main/CHANGELOG.md"
+Documentation = "https://github.com/elyxlz/microsoft-mcp#readme"
+

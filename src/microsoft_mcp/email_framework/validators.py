@@ -429,3 +429,13 @@ def create_validator(
         return result
         
     return validator
+
+# Export main validation functions for direct import
+def validate_email(email: str) -> str:
+    """Validate email address - direct function export"""
+    return EmailValidator.validate_email(email)
+
+
+def validate_recipient_list(recipients: list[str]) -> list[str]:
+    """Validate recipient list - direct function export"""  
+    return EmailValidator.validate_email_list(recipients)

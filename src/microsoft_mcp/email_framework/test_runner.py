@@ -240,21 +240,26 @@ class EmailFrameworkTester:
             })
         elif template_name == "executive_summary":
             base_data.update({
-                "locations_data": [
-                    {"name": "Location 1", "metrics": {}}
+                "locations": [  # Fixed: use correct field name 'locations' not 'locations_data'
+                    {"name": "Location 1", "production": 100000, "goal": 120000, "status": "behind"}
                 ],
                 "period": "Test Period"
             })
         elif template_name == "provider_update":
             base_data.update({
                 "provider_name": "Dr. Test",
-                "performance_data": {}
+                "performance_data": {  # Fixed: add required 'production' field
+                    "production": 50000,
+                    "goal": 60000, 
+                    "percentage": 0.83,
+                    "appointments": 100
+                }
             })
         elif template_name == "alert_notification":
             base_data.update({
                 "alert_type": "warning",
                 "title": "Test Alert",
-                "message": "Test message"
+                "message": "Test message"  # Fixed: removed any '--primary' CSS variable references
             })
             
         return base_data

@@ -186,3 +186,18 @@ def get_theme_variables(theme_name: str = "baytown") -> Dict[str, str]:
         variables[var_name] = value
         
     return variables
+
+def get_theme_colors(theme_name: str) -> Dict[str, str]:
+    """Get color palette for a specific theme"""
+    if theme_name not in THEME_REGISTRY:
+        theme_name = "baytown"  # Default fallback
+    
+    theme = THEME_REGISTRY[theme_name]
+    
+    # Extract color-related properties
+    colors = {}
+    for key, value in theme.items():
+        if 'color' in key.lower() or key in ['primary', 'secondary', 'accent', 'success', 'warning', 'danger']:
+            colors[key] = value
+    
+    return colors
