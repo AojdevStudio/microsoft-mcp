@@ -18,10 +18,10 @@ class TestMCPToolIntegration:
             yield mock
     
     @pytest.fixture
-    def mock_send_email(self):
-        """Mock the existing send_email function."""
-        with patch('microsoft_mcp.tools.send_email') as mock:
-            mock.return_value = {"status": "sent"}
+    def mock_email_operations(self):
+        """Mock the nuclear email_operations function."""
+        with patch('microsoft_mcp.email_tool.email_operations') as mock:
+            mock.return_value = {"status": "success", "message": "Email sent successfully"}
             yield mock
     
     @pytest.fixture
@@ -61,7 +61,7 @@ class TestMCPToolIntegration:
             ]
         }
     
-    def test_send_practice_report_basic(self, mock_send_email, valid_practice_report_params):
+    def test_send_practice_report_basic(self, mock_email_operations, valid_practice_report_params):
         """Test basic send_practice_report functionality."""
         with patch('microsoft_mcp.tools.send_practice_report') as mock_tool:
             mock_tool.return_value = {"status": "sent"}
@@ -71,7 +71,7 @@ class TestMCPToolIntegration:
             assert result["status"] == "sent"
             mock_tool.assert_called_once_with(**valid_practice_report_params)
     
-    def test_send_practice_report_theme_selection(self, mock_send_email):
+    def test_send_practice_report_theme_selection(self, mock_email_operations):
         """Test that theme is selected based on location."""
         locations_themes = [
             ("Baytown", "baytown"),
@@ -95,14 +95,15 @@ class TestMCPToolIntegration:
                 
                 assert result["theme_used"] == expected_theme
     
-    def test_send_practice_report_calls_send_email(self, mock_send_email, valid_practice_report_params):
-        """Test that send_practice_report calls underlying send_email."""
+    def test_send_practice_report_calls_email_operations(self, mock_email_operations, valid_practice_report_params):
+        """Test that send_practice_report calls underlying email_operations."""
         with patch('microsoft_mcp.email_framework.templates.practice_report.PracticeReportTemplate') as MockTemplate:
             mock_instance = MockTemplate.return_value
             mock_instance.render.return_value = "<html>Styled report</html>"
             
-            with patch('microsoft_mcp.tools.send_practice_report', wraps=lambda **kwargs: mock_send_email(
+            with patch('microsoft_mcp.tools.send_practice_report', wraps=lambda **kwargs: mock_email_operations(
                 account_id=kwargs['account_id'],
+                action="send",
                 to=kwargs['to'],
                 subject=kwargs['subject'],
                 body=mock_instance.render.return_value,
@@ -111,17 +112,18 @@ class TestMCPToolIntegration:
             )):
                 # Simulate the tool behavior
                 body = mock_instance.render.return_value
-                result = mock_send_email(
+                result = mock_email_operations(
                     account_id=valid_practice_report_params['account_id'],
+                    action="send",
                     to=valid_practice_report_params['to'],
                     subject=valid_practice_report_params['subject'],
                     body=body
                 )
                 
-                assert mock_send_email.called
-                assert result["status"] == "sent"
+                assert mock_email_operations.called
+                assert result["status"] == "success"
     
-    def test_send_executive_summary_multi_location(self, mock_send_email):
+    def test_send_executive_summary_multi_location(self, mock_email_operations):
         """Test send_executive_summary with multiple locations."""
         params = {
             "account_id": "test-account",
@@ -151,7 +153,7 @@ class TestMCPToolIntegration:
             assert result["status"] == "sent"
             mock_tool.assert_called_once()
     
-    def test_send_provider_update_personalization(self, mock_send_email):
+    def test_send_provider_update_personalization(self, mock_email_operations):
         """Test send_provider_update with provider-specific data."""
         params = {
             "account_id": "test-account",
@@ -172,7 +174,7 @@ class TestMCPToolIntegration:
             
             assert result["status"] == "sent"
     
-    def test_send_alert_notification_urgency_levels(self, mock_send_email):
+    def test_send_alert_notification_urgency_levels(self, mock_email_operations):
         """Test send_alert_notification with different urgency levels."""
         urgency_levels = ["immediate", "high", "normal"]
         
@@ -193,7 +195,7 @@ class TestMCPToolIntegration:
                 assert result["status"] == "sent"
                 assert result["urgency"] == urgency
     
-    def test_all_tools_support_cc_bcc(self, mock_send_email):
+    def test_all_tools_support_cc_bcc(self, mock_email_operations):
         """Test that all new tools support CC and BCC recipients."""
         tools = [
             'send_practice_report',
@@ -286,19 +288,20 @@ class TestMCPToolIntegration:
 class TestBackwardCompatibility:
     """Test that new tools maintain backward compatibility."""
     
-    def test_existing_send_email_still_works(self):
-        """Test that existing send_email function continues to work."""
-        with patch('microsoft_mcp.tools.send_email') as mock_send:
-            mock_send.return_value = {"status": "sent"}
+    def test_email_operations_still_works(self):
+        """Test that nuclear email_operations function works."""
+        with patch('microsoft_mcp.email_tool.email_operations') as mock_send:
+            mock_send.return_value = {"status": "success", "message": "Email sent successfully"}
             
             result = mock_send(
                 account_id="test",
+                action="send",
                 to="recipient@example.com",
                 subject="Test Email",
                 body="Test content"
             )
             
-            assert result["status"] == "sent"
+            assert result["status"] == "success"
             mock_send.assert_called_once()
     
     def test_html_structure_enhancement_compatible(self):
@@ -338,7 +341,7 @@ class TestPerformanceIntegration:
             assert (end_time - start_time) < 2.0
             assert "<html>" in result
     
-    def test_bulk_email_sending(self, mock_send_email):
+    def test_bulk_email_sending(self, mock_email_operations):
         """Test sending multiple emails in sequence."""
         recipients = [
             "exec1@kamdental.com",
