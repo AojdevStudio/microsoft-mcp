@@ -48,10 +48,10 @@ def style_email_content(
 
     # Otherwise, apply basic styling
     from .css.themes import get_theme_styles
-    
+
     # Generate HTML structure with theme styling
     theme_css = get_theme_styles(theme)
-    
+
     html_template = f"""
     <!DOCTYPE html>
     <html>
@@ -74,9 +74,9 @@ def style_email_content(
     </body>
     </html>
     """
-    
+
     # Convert CSS to inline styles
-    return inline_css(html_template)
+    return inline_css(html_template, theme_css)
 
 
 def render_email_template(
@@ -357,14 +357,14 @@ def apply_email_theme(html_content: str, theme: str = "baytown") -> str:
 
     from .css.themes import get_theme_styles
     theme_css = get_theme_styles(theme)
-    
+
     # Insert theme CSS into HTML and inline it
-    if '<style>' in html_content:
-        html_content = html_content.replace('<style>', f'<style>{theme_css}\n')
-    elif '</head>' in html_content:
-        html_content = html_content.replace('</head>', f'<style>{theme_css}</style>\n</head>')
+    if "<style>" in html_content:
+        html_content = html_content.replace("<style>", f"<style>{theme_css}\n")
+    elif "</head>" in html_content:
+        html_content = html_content.replace("</head>", f"<style>{theme_css}</style>\n</head>")
     else:
         # Add head section if missing
-        html_content = f'<html><head><style>{theme_css}</style></head>{html_content}</html>'
-    
-    return inline_css(html_content)
+        html_content = f"<html><head><style>{theme_css}</style></head>{html_content}</html>"
+
+    return inline_css(html_content, theme_css)
