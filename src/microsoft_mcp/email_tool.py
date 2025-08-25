@@ -8,9 +8,8 @@ Part of nuclear simplification architecture replacing 63k token unified tool.
 
 import base64
 import pathlib as pl
-from typing import Any, Literal
-
-from fastmcp import FastMCP
+from typing import Any
+from typing import Literal
 
 from . import graph
 from .email_framework.utils import style_email_content
@@ -156,7 +155,7 @@ def _list_emails(
     if search_query:
         params["$search"] = f'"{search_query}"'
 
-    messages = list(graph.paginate(endpoint, account_id, params=params, max_items=limit))
+    messages = list(graph.paginate(endpoint, account_id, params=params, limit=limit))
     return {
         "status": "success",
         "emails": [format_email(msg, include_body) for msg in messages],
@@ -339,7 +338,7 @@ def _search_emails(
     if has_attachments is not None:
         params["$filter"] = f"hasAttachments eq {str(has_attachments).lower()}"
 
-    messages = list(graph.paginate(endpoint, account_id, params=params, max_items=limit))
+    messages = list(graph.paginate(endpoint, account_id, params=params, limit=limit))
     return {
         "status": "success",
         "emails": [format_email(msg, include_body=False) for msg in messages],

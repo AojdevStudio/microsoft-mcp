@@ -7,7 +7,8 @@ Part of nuclear simplification architecture replacing 63k token unified tool.
 """
 
 import pathlib as pl
-from typing import Any, Literal
+from typing import Any
+from typing import Literal
 
 from . import graph
 
@@ -107,7 +108,7 @@ def _list_files(
         # Use search endpoint for queries
         endpoint = "/me/drive/search(q='{0}')".format(search_query.replace("'", "''"))
 
-    items = list(graph.paginate(endpoint, account_id, params=params, max_items=limit))
+    items = list(graph.paginate(endpoint, account_id, params=params, limit=limit))
     return {
         "status": "success",
         "files": [format_file_item(item) for item in items],
@@ -282,7 +283,7 @@ def _search_files(
             file_type = f".{file_type}"
         params["$filter"] = f"endswith(name,'{file_type}')"
 
-    items = list(graph.paginate(endpoint, account_id, params=params, max_items=limit))
+    items = list(graph.paginate(endpoint, account_id, params=params, limit=limit))
     return {
         "status": "success",
         "files": [format_file_item(item) for item in items],

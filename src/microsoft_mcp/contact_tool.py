@@ -6,7 +6,8 @@ Focused tool providing 5 contact actions through action-based interface:
 Part of nuclear simplification architecture replacing 63k token unified tool.
 """
 
-from typing import Any, Literal
+from typing import Any
+from typing import Literal
 
 from . import graph
 
@@ -99,7 +100,7 @@ def _list_contacts(
     if search_query:
         params["$search"] = f'"{search_query}"'
 
-    contacts = list(graph.paginate(endpoint, account_id, params=params, max_items=limit))
+    contacts = list(graph.paginate(endpoint, account_id, params=params, limit=limit))
     return {
         "status": "success",
         "contacts": [format_contact(contact) for contact in contacts],
@@ -212,7 +213,7 @@ def _search_contacts(
         "$select": "id,givenName,surname,displayName,emailAddresses,mobilePhone,businessPhones,companyName,jobTitle,department,officeLocation"
     }
 
-    contacts = list(graph.paginate(endpoint, account_id, params=params, max_items=limit))
+    contacts = list(graph.paginate(endpoint, account_id, params=params, limit=limit))
     return {
         "status": "success",
         "contacts": [format_contact(contact) for contact in contacts],

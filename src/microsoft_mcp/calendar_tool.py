@@ -6,7 +6,8 @@ Focused tool providing 8 calendar actions through action-based interface:
 Part of nuclear simplification architecture replacing 63k token unified tool.
 """
 
-from typing import Any, Literal
+from typing import Any
+from typing import Literal
 
 from . import graph
 
@@ -121,7 +122,7 @@ def _list_calendar_events(
         "$select": "id,subject,start,end,location,attendees,organizer,body,isOnlineMeeting,webLink,createdDateTime,lastModifiedDateTime",
     }
 
-    events = list(graph.paginate(endpoint, account_id, params=params, max_items=limit))
+    events = list(graph.paginate(endpoint, account_id, params=params, limit=limit))
     return {
         "status": "success",
         "events": [format_calendar_event(event) for event in events],
@@ -239,7 +240,7 @@ def _search_calendar_events(
     if start_date and end_date:
         params["$filter"] = f"start/dateTime ge '{start_date}T00:00:00' and end/dateTime le '{end_date}T23:59:59'"
 
-    events = list(graph.paginate(endpoint, account_id, params=params, max_items=50))
+    events = list(graph.paginate(endpoint, account_id, params=params, limit=50))
     return {
         "status": "success",
         "events": [format_calendar_event(event) for event in events],

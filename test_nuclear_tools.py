@@ -13,10 +13,10 @@ def test_nuclear_tools_import():
     """Test that all 5 nuclear tools can be imported without FastMCP errors."""
     try:
         print("✅ All 5 nuclear tools imported successfully")
-        return True
+        assert True  # Use assert instead of return
     except Exception as e:
         print(f"❌ Nuclear tool import failed: {e}")
-        return False
+        assert False, f"Nuclear tool import failed: {e}"
 
 
 def test_nuclear_tools_signatures():
