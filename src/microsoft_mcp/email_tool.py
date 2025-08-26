@@ -12,6 +12,7 @@ from typing import Any
 from typing import Literal
 
 from . import graph
+from .email_framework.html_formatter import ensure_html_email_body
 from .email_framework.utils import style_email_content
 
 # Email folder mappings
@@ -181,12 +182,15 @@ def _send_email(
 
     to_list = [to]
 
-    # Style email content professionally
-    content = style_email_content(body, subject)
+    # Format body as HTML for consistent spacing in Outlook
+    body_formatted = ensure_html_email_body(body)
+    
+    # Apply professional styling if needed  
+    content = style_email_content(body_formatted["content"], subject) if body else body_formatted["content"]
 
     message = {
         "subject": subject,
-        "body": {"contentType": "HTML", "content": content},
+        "body": {"contentType": "html", "content": content},
         "toRecipients": [{"emailAddress": {"address": addr}} for addr in to_list],
     }
 
@@ -221,12 +225,15 @@ def _create_draft(
 
     to_list = [to]
 
-    # Style email content professionally
-    content = style_email_content(body, subject)
+    # Format body as HTML for consistent spacing in Outlook
+    body_formatted = ensure_html_email_body(body)
+    
+    # Apply professional styling if needed
+    content = style_email_content(body_formatted["content"], subject) if body else body_formatted["content"]
 
     message = {
         "subject": subject,
-        "body": {"contentType": "HTML", "content": content},
+        "body": {"contentType": "html", "content": content},
         "toRecipients": [{"emailAddress": {"address": addr}} for addr in to_list],
     }
 
@@ -252,11 +259,15 @@ def _reply_to_email(
     reply_all: bool = False
 ) -> dict[str, Any]:
     """Reply to an email"""
-    content = style_email_content(body, "Reply")
+    # Format body as HTML for consistent spacing
+    body_formatted = ensure_html_email_body(body)
+    
+    # Apply professional styling
+    content = style_email_content(body_formatted["content"], "Reply")
 
     reply_data = {
         "message": {
-            "body": {"contentType": "HTML", "content": content}
+            "body": {"contentType": "html", "content": content}
         }
     }
 
@@ -286,9 +297,11 @@ def _forward_email(account_id: str, email_id: str, to: str, comment: str | None 
     }
 
     if comment:
-        content = style_email_content(comment, "Forward")
+        # Format comment as HTML for consistent spacing
+        comment_formatted = ensure_html_email_body(comment)
+        content = style_email_content(comment_formatted["content"], "Forward")
         forward_data["message"] = {
-            "body": {"contentType": "HTML", "content": content}
+            "body": {"contentType": "html", "content": content}
         }
 
     graph.request("POST", f"/me/messages/{email_id}/forward", account_id, json=forward_data)
