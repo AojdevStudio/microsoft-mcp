@@ -128,14 +128,14 @@
 
 ### Unit Tests Development
 
-- [ ] Create test structure: `tests/email_framework/`
-- [ ] Write unit tests for email tools: `tests/email_framework/test_tools.py`
-- [ ] Write authentication tests: `tests/email_framework/test_auth.py`
-- [ ] Write Graph client tests: `tests/email_framework/test_graph_client.py`
-- [ ] Write template tests: `tests/email_framework/test_templates.py`
-- [ ] Write CSS/styling tests: `tests/email_framework/test_css_inliner.py`
+- [ ] Create test structure: `tests/email-framework/`
+- [ ] Write unit tests for email tools: `tests/email-framework/test_tools.py`
+- [ ] Write authentication tests: `tests/email-framework/test_auth.py`
+- [ ] Write Graph client tests: `tests/email-framework/test_graph_client.py`
+- [ ] Write template tests: `tests/email-framework/test_templates.py`
+- [ ] Write CSS/styling tests: `tests/email-framework/test_css_inliner.py`
 - [ ] Achieve 90%+ code coverage target
-- [ ] Run: `pytest tests/email_framework/ --cov`
+- [ ] Run: `pytest tests/email-framework/ --cov`
 
 ### Integration Tests
 

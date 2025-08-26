@@ -385,7 +385,7 @@ uv run pytest
 uv run pytest tests/test_create_calendar_event.py
 
 # Run email framework tests
-uv run pytest tests/email_framework/
+uv run pytest tests/email-framework/
 
 # Run with coverage
 uv run pytest --cov=microsoft_mcp

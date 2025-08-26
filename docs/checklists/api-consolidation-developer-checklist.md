@@ -11,7 +11,7 @@
 - [ ] Set up development branch: `feature/MSFT-API-CONSOLIDATION`
 - [ ] Review existing code patterns in `src/microsoft_mcp/tools.py`
 - [ ] Understand Microsoft Graph API patterns in `src/microsoft_mcp/graph.py`
-- [ ] Analyze current test patterns in `tests/email_framework/test_mcp_integration.py`
+- [ ] Analyze current test patterns in `tests/email-framework/test_mcp_integration.py`
 - [ ] Map dependencies between existing tools and identify consolidation opportunities
 - [ ] Set up performance testing environment with baseline measurements
 
@@ -120,7 +120,7 @@
 
 ### Integration Tests
 
-- [ ] **Update Microsoft Graph integration tests** in `tests/email_framework/test_mcp_integration.py`
+- [ ] **Update Microsoft Graph integration tests** in `tests/email-framework/test_mcp_integration.py`
   - [ ] Test unified search against real Microsoft Graph API
   - [ ] Validate enhanced file listing with real OneDrive data
   - [ ] Test attachment operations with real email messages
