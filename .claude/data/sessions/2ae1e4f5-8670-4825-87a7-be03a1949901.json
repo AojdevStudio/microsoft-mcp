@@ -1,0 +1,8 @@
+{
+  "session_id": "2ae1e4f5-8670-4825-87a7-be03a1949901",
+  "prompts": [
+    "ok i have done it. it should work now. only think is i should not have to export my client id.. as this is an mcp and it is in the config of the mcp right",
+    "ultra-think to find out why the mcp server just doesn't respond. and it is not even timeout it just loops infinitely.. what is the issue? do you want to write a small debug trace? come on! have the @agent-python-pro to ultrathink on this",
+    "ok i exported the client id.. test it again"
+  ]
+}

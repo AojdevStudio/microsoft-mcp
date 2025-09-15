@@ -1,6 +1,6 @@
 [project]
 name = "microsoft-mcp"
-version = "0.1.0"
+version = "0.2.1"
 description = "Microsoft Graph MCP server for Outlook, Calendar, and OneDrive with multi-account support"
 readme = "README.md"
 authors = [
@@ -234,4 +234,3 @@ Repository = "https://github.com/elyxlz/microsoft-mcp.git"
 Issues = "https://github.com/elyxlz/microsoft-mcp/issues"
 Changelog = "https://github.com/elyxlz/microsoft-mcp/blob/main/CHANGELOG.md"
 Documentation = "https://github.com/elyxlz/microsoft-mcp#readme"
-

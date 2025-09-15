@@ -1,28 +1,112 @@
-# Microsoft MCP Tools Architecture
+# Microsoft MCP Nuclear Tools Architecture
 
-This document provides a comprehensive overview of all available tools in the Microsoft MCP (Model Context Protocol) implementation. The tools are organized by functionality and provide complete Microsoft 365 integration capabilities.
+This document provides a comprehensive overview of the nuclear 5-tool architecture in the Microsoft MCP (Model Context Protocol) implementation. The tools provide complete Microsoft 365 integration through action-based interfaces.
 
-## Overview
+## Nuclear Architecture Overview
 
-The Microsoft MCP provides 59 tools that enable comprehensive interaction with Microsoft 365 services including Outlook (email), OneDrive (file management), Calendar, and Contacts. All tools require an authenticated Microsoft account and use the Microsoft Graph API.
+The Microsoft MCP implements a **nuclear 5-tool architecture** that replaced the previous 63k token unified tool, achieving a **92% token reduction**. Each tool uses action-based routing with consistent `account_id` + `action` patterns to provide comprehensive Microsoft 365 integration including Outlook (email), OneDrive (file management), Calendar, and Contacts.
 
-## Authentication Tools
+## Nuclear 5-Tool Architecture
 
-### `list_accounts()`
-**Description**: List all signed-in Microsoft accounts  
-**Returns**: List of accounts with username and account_id  
-**Use Case**: Get available account IDs for other tool operations
+### 1. Email Operations Tool
 
-### `authenticate_account()`
-**Description**: Authenticate a new Microsoft account using device flow authentication  
-**Returns**: Authentication instructions and device code for user to complete authentication  
-**Use Case**: Initial setup - authenticate new Microsoft accounts
+**`email_operations(account_id: str, action: str, **params)`**
 
-### `complete_authentication(flow_cache: str)`
-**Description**: Complete the authentication process after user enters device code  
-**Parameters**: flow_cache from authenticate_account response  
-**Returns**: Account information if authentication successful  
-**Use Case**: Finalize authentication after user completes device flow
+**Description**: Comprehensive email management with action-based routing
+**Actions**: `list`, `send`, `reply`, `draft`, `delete`, `move`, `search`
+
+**Usage Examples**:
+```python
+# List emails
+email_operations(account_id="user@company.com", action="list", folder="inbox", limit=10)
+
+# Send email
+email_operations(account_id="user@company.com", action="send",
+                to="recipient@example.com", subject="Test", body="Hello")
+
+# Reply to email
+email_operations(account_id="user@company.com", action="reply",
+                email_id="message-id", body="Thanks for your message")
+```
+
+### 2. Calendar Operations Tool
+
+**`calendar_operations(account_id: str, action: str, **params)`**
+
+**Description**: Calendar and meeting management with action-based routing
+**Actions**: `list`, `create`, `update`, `delete`, `invite`
+
+**Usage Examples**:
+```python
+# List calendar events
+calendar_operations(account_id="user@company.com", action="list",
+                   start_date="2024-01-01", end_date="2024-01-31")
+
+# Create meeting
+calendar_operations(account_id="user@company.com", action="create",
+                   subject="Team Meeting", start_datetime="2024-01-15T10:00:00Z",
+                   end_datetime="2024-01-15T11:00:00Z", attendees=["team@company.com"])
+```
+
+### 3. File Operations Tool
+
+**`file_operations(account_id: str, action: str, **params)`**
+
+**Description**: OneDrive file management with action-based routing
+**Actions**: `list`, `upload`, `download`, `delete`, `share`, `search`
+
+**Usage Examples**:
+```python
+# List files
+file_operations(account_id="user@company.com", action="list", folder_path="/Documents")
+
+# Upload file
+file_operations(account_id="user@company.com", action="upload",
+               local_path="/local/file.pdf", onedrive_path="/Documents/file.pdf")
+
+# Share file
+file_operations(account_id="user@company.com", action="share",
+               file_path="/Documents/report.pdf", email="colleague@company.com")
+```
+
+### 4. Contact Operations Tool
+
+**`contact_operations(account_id: str, action: str, **params)`**
+
+**Description**: Contact management with action-based routing
+**Actions**: `list`, `create`, `update`, `delete`, `search`
+
+**Usage Examples**:
+```python
+# List contacts
+contact_operations(account_id="user@company.com", action="list", limit=50)
+
+# Create contact
+contact_operations(account_id="user@company.com", action="create",
+                  first_name="John", last_name="Doe", email="john@example.com")
+
+# Search contacts
+contact_operations(account_id="user@company.com", action="search", query="Smith")
+```
+
+### 5. Authentication Operations Tool
+
+**`auth_operations(action: str, **params)`**
+
+**Description**: Account authentication and management
+**Actions**: `list`, `authenticate`, `complete_auth`
+
+**Usage Examples**:
+```python
+# List authenticated accounts
+auth_operations(action="list")
+
+# Start authentication
+auth_operations(action="authenticate")
+
+# Complete authentication
+auth_operations(action="complete_auth", flow_cache="device-flow-cache-data")
+```
 
 ## Email Management Tools
 

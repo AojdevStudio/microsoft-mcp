@@ -1,0 +1,8 @@
+{
+  "session_id": "6be47485-734b-48c3-996b-866eeed1dda1",
+  "prompts": [
+    "/BMad:agents:qa ",
+    "we have a bad bug with the project and we cannot seem to identify it. I ran a sudo purge on my machine this morning. and now the email-operations tool is not working even though the auth status says we are authenticated. walk me through the process of finding the lastest cached tokens, removing them myself and then restarting auth. ",
+    "you won't get a response. i used the inspector and got this response for auth operations: {\n  \"content\": [\n    {\n      \"type\": \"text\",\n      \"text\": \"{\\n  \\\"status\\\": \\\"success\\\",\\n  \\\"total_accounts\\\": 1,\\n  \\\"authenticated_accounts\\\": 1,\\n  \\\"accounts\\\": [\\n    {\\n      \\\"account_id\\\": \\\"e132e5d6-da3c-4b36-8a1a-ae364772e37d.e6ca2cab-cd2e-4ef0-a2d1-a536e68d34e3\\\",\\n      \\\"username\\\": \\\"admin@kamdental.com\\\",\\n      \\\"authenticated\\\": true,\\n      \\\"expires_in\\\": 4591,\\n      \\\"token_type\\\": \\\"Bearer\\\"\\n    }\\n  ]\\n}\"\n    }\n  ],\n  \"isError\": false\n} but then i got this for email_operations: {\n  \"error\": \"MCP error -32001: Request timed out\"\n}"
+  ]
+}

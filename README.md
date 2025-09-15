@@ -121,6 +121,7 @@ claude
 4. Authentication → Allow public client flows: Yes
 5. API permissions → Add these delegated permissions:
    - Mail.ReadWrite
+   - Mail.Send
    - Calendars.ReadWrite
    - Files.ReadWrite
    - Contacts.Read
@@ -187,7 +188,10 @@ Or for local development:
 
 ## Multi-Account Support
 
-All tools require an `account_id` parameter as the first argument:
+All tools require an `account_id` parameter as the first argument. You can pass:
+- The exact `home_account_id` (recommended)
+- The account `username` (email), e.g. `admin@contoso.com`
+- The keyword `default` to use the first authenticated account
 
 ```python
 # List accounts to get IDs
@@ -198,6 +202,10 @@ account_id = accounts[0]["account_id"]
 send_email(account_id, "user@example.com", "Subject", "Body")
 list_emails(account_id, limit=10, include_body=True)
 create_event(account_id, "Meeting", "2024-01-15T10:00:00Z", "2024-01-15T11:00:00Z")
+
+# Or via username or 'default'
+list_emails("admin@contoso.com", limit=10, include_body=True)
+list_emails("default", limit=10, include_body=True)
 ```
 
 ## Professional Email Templates
@@ -284,6 +292,47 @@ uvx ruff check --fix --unsafe-fixes .
 uv run python -m microsoft_mcp.email_framework.test_runner
 ```
 
+## Codex CLI Setup
+
+You can run this MCP server from Codex CLI by adding an MCP server entry that launches the `microsoft-mcp` binary (or `uvx` command) with the required environment variable.
+
+1) Add to your Codex config file (adjust path to wherever your Codex CLI reads config):
+
+```toml
+[mcp_servers.microsoft]
+command = "uvx"
+args = [
+  "--from",
+  "git+https://github.com/elyxlz/microsoft-mcp.git",
+  "microsoft-mcp",
+]
+env = { "MICROSOFT_MCP_CLIENT_ID" = "your-azure-app-id", "MICROSOFT_MCP_TENANT_ID" = "common" }
+```
+
+Notes:
+- `MICROSOFT_MCP_CLIENT_ID` is required (Azure App Registration → Application ID).
+- Optional `MICROSOFT_MCP_TENANT_ID` can be `common`, your tenant GUID, or `consumers` for personal accounts.
+- The above uses `uvx` to fetch/run directly from GitHub. If you’re developing locally, use the local variant below.
+
+2) Local development variant (run from your checked-out repo):
+
+```toml
+[mcp_servers.microsoft]
+command = "uv"
+args = ["--directory", "/path/to/microsoft-mcp", "run", "microsoft-mcp"]
+env = { "MICROSOFT_MCP_CLIENT_ID" = "your-azure-app-id", "MICROSOFT_MCP_TENANT_ID" = "common" }
+```
+
+3) Start Codex CLI and ensure the server appears in the tool list. If authentication is needed, use the `auth_operations` tool:
+
+- `auth_operations(action="authenticate")` → visit the URL and enter the code
+- `auth_operations(action="status")` → verify at least one account is authenticated
+- Use `account_id="default"` or your email (e.g., `admin@contoso.com`) when calling tools
+
+Troubleshooting:
+- If email sending returns 403 on `/me/sendMail`, add the `Mail.Send` delegated permission to your Azure app and grant admin consent.
+- If passing an `account_id` that doesn’t exist, the server now returns a clear error with the list of available accounts. You can also pass `default` to use the first account.
+
 ## Example: AI Assistant Scenarios
 
 ### Smart Email Management
@@ -337,6 +386,7 @@ create_event(
 - **Authentication fails**: Check your CLIENT_ID is correct
 - **"Need admin approval"**: Use `MICROSOFT_MCP_TENANT_ID=consumers` for personal accounts
 - **Missing permissions**: Ensure all required API permissions are granted in Azure
+  - Sending mail requires the `Mail.Send` delegated permission (in addition to `Mail.ReadWrite`). A missing `Mail.Send` typically returns HTTP 403 on `/me/sendMail`.
 - **Token errors**: Delete `~/.microsoft_mcp_token_cache.json` and re-authenticate
 
 ## Documentation
@@ -344,6 +394,7 @@ create_event(
 - [Email Framework Guide](docs/email-framework-guide.md) - Comprehensive guide to professional email templates
 - [API Documentation](docs/api.md) - Detailed API reference
 - [Examples](examples/) - Code examples and use cases
+- [Bugfix: Account Resolution Hang](docs/bugfix-account-resolution.md) - Details of the fix for hanging tool calls when `account_id` mismatched
 
 ## License
 
