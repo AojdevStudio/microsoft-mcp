@@ -1,0 +1,10 @@
+{
+  "session_id": "b26a83bf-f297-4286-adf8-6fe464be1c8e",
+  "prompts": [
+    "/BMad:agents:architect ",
+    "/BMad:agents:bmad-orchestrator ",
+    "we have an issue the mcp server is connecting to clients but then the tool calls are not working. can you help me debug this issue please. ",
+    "ok can you simply use the mcp itself to put a test email in my drafts folder please",
+    "you're getting no response as you can see so what is the issue?"
+  ]
+}

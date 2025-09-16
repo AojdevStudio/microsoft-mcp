@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+## [0.2.1] - 2025-09-15
+
+### Fixed
+
+- Resolve account selection hang when `account_id` didn't match an existing account. The server
+  now accepts `home_account_id`, email `username` (case‑insensitive), or the keyword `default`.
+  When an invalid `account_id` is supplied and accounts exist, a clear error is returned listing
+  available accounts instead of silently entering MSAL device flow (no more tool call hanging).
+- Docs updated to explicitly require the `Mail.Send` delegated permission and clarify
+  multi‑account usage and troubleshooting for HTTP 403 on `/me/sendMail`.
+
 
 ## [0.2.0] - 2025-08-05
 

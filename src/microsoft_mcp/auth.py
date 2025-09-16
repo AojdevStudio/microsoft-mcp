@@ -51,18 +51,33 @@ def get_token(account_id: str | None = None) -> str:
     app = get_app()
 
     accounts = app.get_accounts()
-    account = None
 
-    if account_id:
-        account = next(
-            (a for a in accounts if a["home_account_id"] == account_id), None
-        )
-    elif accounts:
-        account = accounts[0]
+    def _find_account() -> dict | None:
+        if not accounts:
+            return None
+        if account_id is None or account_id.strip().lower() in {"", "default", "me", "primary"}:
+            return accounts[0]
+        for a in accounts:
+            if a.get("home_account_id") == account_id:
+                return a
+        for a in accounts:
+            if a.get("username", "").lower() == account_id.lower():
+                return a
+        return None
 
-    result = app.acquire_token_silent(SCOPES, account=account)
+    account = _find_account()
+
+    result = app.acquire_token_silent(SCOPES, account=account) if account else None
 
     if not result:
+        if accounts and account_id and account is None:
+            available = ", ".join(
+                f"{a.get('username')} ({a.get('home_account_id')})" for a in accounts
+            )
+            raise Exception(
+                f"Account '{account_id}' not found. Available accounts: {available}. "
+                "Pass 'default' to use the first account."
+            )
         flow = app.initiate_device_flow(scopes=SCOPES)
         if "user_code" not in flow:
             raise Exception(

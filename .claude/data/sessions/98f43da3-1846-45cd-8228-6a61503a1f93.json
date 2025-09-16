@@ -1,0 +1,8 @@
+{
+  "session_id": "98f43da3-1846-45cd-8228-6a61503a1f93",
+  "prompts": [
+    "having issues with the mcp. need you to debug the issues please. here's what i got so far trying to use it in claude desktop: [{\"type\": \"text\", \"text\": \"Tool execution failed\", \"uuid\": \"e4877fd0-2455-448f-a83b-89e0bcd462bb\"}] and the logs are here: [Image #1]",
+    "I was the issue.. i fixed it in entraID. i had to remove the URIs that had previously... no worries everything back to normal now. ",
+    "but now i'm getting this error: {\n  \"status\": \"error\",\n  \"message\": \"Client error '403 Forbidden' for url 'https://graph.microsoft.com/v1.0/me/sendMail'\\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/403\"\n}"
+  ]
+}

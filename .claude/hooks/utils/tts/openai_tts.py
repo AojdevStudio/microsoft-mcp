@@ -74,14 +74,12 @@ async def main():
                 response_format="mp3",
             ) as response:
                 # Create a temporary file to store the audio
-                with tempfile.NamedTemporaryFile(
-                    delete=False, suffix=".mp3"
-                ) as temp_file:
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp_file:
                     # Write the audio stream to the temporary file
                     async for chunk in response.iter_bytes():
                         temp_file.write(chunk)
                     temp_file_path = temp_file.name
-
+                
                 try:
                     # Play the audio using afplay
                     subprocess.run(["afplay", temp_file_path], check=True)
