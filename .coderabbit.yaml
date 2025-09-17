@@ -1,0 +1,183 @@
+# .coderabbit.yaml - Python-focused Configuration
+# Optimized for Python projects with Ruff, pytest, and type checking
+
+language: "en-US"
+early_access: false
+reviews:
+  profile: "chill"
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+
+  # Path filters to focus on Python code
+  path_filters:
+    - "!**/__pycache__/**"
+    - "!**/venv/**"
+    - "!**/env/**"
+    - "!**/.env/**"
+    - "!**/node_modules/**"
+    - "!**/dist/**"
+    - "!**/build/**"
+    - "!**/*.egg-info/**"
+    - "!.git/**"
+    - "!*.lock"
+    - "!*.log"
+
+  path_instructions:
+    # Exclude documentation files from review
+    - path: "**/*.md"
+      instructions: |
+        Skip reviewing this markdown file as it contains documentation only.
+
+    - path: "**/*.rst"
+      instructions: |
+        Skip reviewing this reStructuredText documentation file.
+
+    - path: "**/*.txt"
+      instructions: |
+        Skip reviewing this text file.
+
+    # Exclude YAML/JSON configuration files from review
+    - path: "**/*.yml"
+      instructions: |
+        Skip reviewing this YAML configuration file.
+
+    - path: "**/*.yaml"
+      instructions: |
+        Skip reviewing this YAML configuration file.
+
+    - path: "**/*.json"
+      instructions: |
+        Skip reviewing this JSON configuration file unless it's a package.json or similar dependency file.
+
+    # Exclude Claude Code configuration directory
+    - path: ".claude/**"
+      instructions: |
+        Skip reviewing Claude Code configuration files as they are user-specific settings.
+
+    # Focus on Python code with detailed review
+    - path: "**/*.py"
+      instructions: |
+        Review the Python code for:
+        - PEP 8 compliance and Ruff linter conformity
+        - Code quality and pythonic patterns
+        - Type hints and mypy compatibility
+        - Security vulnerabilities and best practices
+        - Performance considerations
+        - Logic errors and edge cases
+        - Proper exception handling
+        - Documentation strings (docstrings) following Google or NumPy style
+        - Import organization and dependency management
+
+    # Python testing files (consolidated)
+    - path: "**/test*.py"
+      instructions: |
+        Review the Python test code for:
+        - pytest best practices and conventions
+        - Test coverage and completeness
+        - Proper use of fixtures and parametrization
+        - Clear test naming and structure
+        - Mocking and assertion patterns
+        - Test isolation and independence
+        - Performance testing considerations
+
+    - path: "**/tests/**/*.py"
+      instructions: |
+        Review the Python test code for:
+        - pytest best practices and conventions
+        - Test coverage and completeness
+        - Proper use of fixtures and parametrization
+        - Clear test naming and structure
+        - Mocking and assertion patterns
+        - Test isolation and independence
+
+    # Python configuration files
+    - path: "pyproject.toml"
+      instructions: |
+        Review the Python project configuration for:
+        - Proper dependency management
+        - Build system configuration
+        - Tool configurations (Ruff, mypy, pytest)
+        - Project metadata accuracy
+
+    - path: "requirements*.txt"
+      instructions: |
+        Review Python dependencies for:
+        - Version pinning strategies
+        - Security vulnerabilities
+        - Unnecessary or outdated dependencies
+        - Proper separation of dev/prod dependencies
+
+    - path: "setup.py"
+      instructions: |
+        Review the Python setup script for:
+        - Proper package configuration
+        - Dependency specification
+        - Metadata completeness
+        - Security considerations
+
+  auto_review:
+    enabled: true
+    ignore_title_keywords:
+      - "WIP"
+      - "DO NOT MERGE"
+      - "DRAFT"
+      - "[skip ci]"
+    drafts: false
+    base_branches: ["main", "master", "develop"]
+
+  # Enable Python-specific tools
+  tools:
+    languagetool:
+      enabled: true
+      language: en-US
+      configuration:
+        level: picky
+        mother_tongue: en
+        dictionary:
+          - 'reactive-firewall'
+          - 'CEP-9'
+          - 'CEP-8'
+          - 'CEP-7'
+          - 'CEP-5'
+          - 'Shellscript'
+          - 'bash'
+        disabled_rules:
+          - EN_QUOTES
+          - CONSECUTIVE_SPACES
+        enabled_rules:
+          - STYLE
+          - EN_CONTRACTION_SPELLING
+          - EN_WORD_COHERENCY
+          - IT_IS_OBVIOUS
+          - TWELFTH_OF_NEVER
+          - OXFORD_SPELLING
+          - PASSIVE_VOICE
+    shellcheck:
+      enabled: true
+    ruff:
+      enabled: true
+      configuration:
+        extend_select:
+          - E  # Pycodestyle errors (style issues)
+          - F  # PyFlakes codes (logical errors)
+          - W  # Pycodestyle warnings
+          - N  # PEP 8 naming conventions
+        ignore:
+          - W191
+          - W391
+          - E117
+          - D208
+        line_length: 100
+        dummy_variable_rgx: '^(_.*|junk|extra)$'  # Variables starting with '_' or named 'junk' or 'extras', are considered dummy variables
+        external:
+          flake8-blind-except: {}
+          flake8-docstrings: {}
+          flake8-comprehensions: {}
+          flake8-debugger: {}
+          flake8-eradicate: {}
+          # Include other Flake8 plugins as needed
+chat:
+  auto_reply: true
