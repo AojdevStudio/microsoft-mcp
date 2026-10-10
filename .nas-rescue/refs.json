@@ -1,0 +1,35 @@
+{
+  "source": "/volume1/projects/mcp-servers/microsoft-mcp",
+  "original_head": "bccc1d829a7e724ff6c270d95b99dbaa9236e7d1",
+  "original_refs": [
+    [
+      "refs/heads/master",
+      "bccc1d829a7e724ff6c270d95b99dbaa9236e7d1",
+      "commit"
+    ],
+    [
+      "refs/remotes/origin/HEAD",
+      "bccc1d829a7e724ff6c270d95b99dbaa9236e7d1",
+      "commit"
+    ],
+    [
+      "refs/remotes/origin/dev",
+      "9f360bee963239cf494f9598e663feddd5a10420",
+      "commit"
+    ],
+    [
+      "refs/remotes/origin/master",
+      "bccc1d829a7e724ff6c270d95b99dbaa9236e7d1",
+      "commit"
+    ],
+    [
+      "refs/tags/v0.1.0",
+      "7d4c223348a70f07ebe7d6967eb0f7e095dddc0c",
+      "tag"
+    ]
+  ],
+  "stashes": [],
+  "excluded_new_files": [
+    ".env.example"
+  ]
+}

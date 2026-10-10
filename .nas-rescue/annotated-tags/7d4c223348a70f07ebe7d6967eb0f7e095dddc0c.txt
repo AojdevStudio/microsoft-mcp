@@ -1,0 +1,23 @@
+object 28879c12ba4d0ac8b8d4fe2bf83a1a3e1f8f461e
+type commit
+tag v0.1.0
+tagger AOJDevStudio <admin@kamdental.com> 1752882451 -0500
+
+Release v0.1.0 - Initial Release
+
+- Complete Microsoft MCP server implementation
+- Claude Code infrastructure integration
+- Microsoft Graph API support for:
+  - Email management with HTML formatting
+  - Calendar operations
+  - Contact management
+  - File operations (OneDrive)
+  - Unified search
+- Multi-account support
+- Professional email signatures
+- Comprehensive test suite
+
+- OAuth2 device flow authentication
+- Secure token caching
+
+First official release of Microsoft MCP Server with full Claude Code integration.
